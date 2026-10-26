@@ -9,6 +9,6 @@ disable-model-invocation: true
 參數：$ARGUMENTS
 
 - 沒有參數：`touch .hoard-pipeline/STOP`；手上的功能做完三題檢查就 commit，過不了就 revert；然後 Step 6 收工。
-- 含「立刻」或「now」：`touch .hoard-pipeline/STOP`；手上的功能直接 revert（不留半成品，從 CATALOG 移除）；立即 Step 6 收工。
+- 含「立刻」「now」或「immediately」：`touch .hoard-pipeline/STOP`；手上的功能直接 revert（不留半成品，從 CATALOG 移除）；立即 Step 6 收工。
 
 結束原因寫「使用者喊停」。
