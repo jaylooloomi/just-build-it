@@ -161,9 +161,6 @@ claude plugin marketplace remove jaylooloomi-build
 4. 先看**被防線擋下**和**耦合稽核**兩段：前者是它想做什麼被擋、後者是功能有沒有偷偷互相依賴。這兩段決定你要不要讓它再跑一次。
 5. 留下的開 MR（對 BASE），合併後刪 `.hoard-pipeline/`。
 
-## 實戰驗證
-
-還沒有。這個 plugin 是 2026-10-26 從一場「無上限自主演進」的可行性討論收斂出來的（見 [docs/design.md](docs/design.md)），腳本層有 10 個測試，agent 流程尚未在真實 repo 跑過整夜。第一次請用 `只量` 看判定，再用 `--scope` 鎖小範圍跑 2 小時。跑完兩個數字請開 issue 回報：你花了幾分鐘滑完、留下幾個功能。
 
 ## 為什麼
 

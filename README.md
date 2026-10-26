@@ -161,9 +161,6 @@ A human will do exactly three things: glance, try, delete. Anything more is work
 4. Read **Blocked by guards** and **Coupling audit** first: what it tried to do and got stopped, and whether features started depending on each other. These two sections decide whether you let it run again.
 5. Open an MR for the keepers (against BASE); delete `.hoard-pipeline/` after merge.
 
-## Field results
-
-None yet. This plugin converged out of a feasibility discussion about "unbounded self-evolving agent" prompts on 2026-10-26 (see [docs/design.md](docs/design.md)). The script layer has 10 tests; the agent loop has not run a full night on a real repo. For your first run, use `measure only`, then lock a small `--scope` for 2 hours. Please open an issue with two numbers afterwards: minutes you spent swiping, features you kept.
 
 ## Why
 
