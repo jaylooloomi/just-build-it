@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/hoard-stop.sh", "timeout": 30 }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 30,
+            "prompt": "You are the evidence checker for the just-build-it hoarding session. Hook input: $ARGUMENTS\n\nReturn {\"ok\": true} immediately if ANY of these hold:\n- hook_event_name is SubagentStop\n- no hoarding session is active (no `touch .hoard-pipeline/ACTIVE` in the transcript, or `.hoard-pipeline/DONE` was created, or a wrap-up starting with '報告老闆' was posted)\n- stop_hook_active is true and the previous block reason came from this evidence check\n\nOtherwise judge ONLY the last assistant turn. Return {\"ok\": false, \"reason\": \"...\"} when the turn:\n- used no tools at all, or\n- ended without printing `git status --short`, or\n- claims tests passed but the transcript shows no command output supporting it, or\n- committed a feature without the transcript showing core_check.sh and removability_check.sh output for it, or\n- opened a new feature without committing (or dropping) the previous one.\nName the single missing piece of evidence in one sentence. Never judge whether the work is finished; the deadline decides that. Never ask Claude to stop."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/guard-bash.sh", "timeout": 10 } ] },
+      { "matcher": "Write|Edit|MultiEdit|apply_patch", "hooks": [ { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/guard-write.sh", "timeout": 10 } ] }
+    ]
+  }
+}

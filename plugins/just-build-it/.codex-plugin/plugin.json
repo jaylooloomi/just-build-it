@@ -1,0 +1,10 @@
+{
+  "name": "just-build-it",
+  "displayName": "Just Build It",
+  "version": "0.1.0",
+  "description": "說「我不想上班」，Claude 接手當定時囤貨機：先量專案類型與耦合度決定範圍，再在時限內不停地長「可獨立開關、可一鍵刪除、附一張卡」的功能，最後 10% 時間強制打包成 CATALOG.md。你隔天只負責滑卡片、開 toggle、按刪除。附 Stop hook 續跑、三階段計時、PreToolUse 核心凍結防線。",
+  "author": { "name": "Arthur Wang" },
+  "repository": "https://github.com/jaylooloomi/just-build-it",
+  "license": "MIT",
+  "keywords": ["autonomous", "hoard", "feature-flags", "stop-hook", "evolve"]
+}
