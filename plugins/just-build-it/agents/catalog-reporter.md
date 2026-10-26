@@ -12,6 +12,7 @@ Output exactly this, in Traditional Chinese, nothing else:
 報告老闆，囤貨完成。<TIMING 那一行>
 
 模式：<whole|module(<範圍>)|plugin>　分支：hoard/<date>（基於 <BASE>，已 push；MR 對 <BASE> 開）
+收尾：K 項既有 TODO／失敗測試做完（原地修，可 git revert；見 CATALOG「收尾」）
 囤了 N 個功能，全部 flag 預設關閉。怎麼試：<CATALOG 的「怎麼試」那一行>
 
   01 <slug> — <一句話>　開：<…>　刪：<…>　可刪檢查 <REMOVABLE|NOT-REMOVABLE>

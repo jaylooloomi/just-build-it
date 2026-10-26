@@ -146,3 +146,16 @@ def test_removability_and_core_check(tmp_path):
     (root / 'app/core.py').write_text('def run(): return 2\n')
     r = subprocess.run(['bash', S / 'core_check.sh'], capture_output=True, text=True, env=env, cwd=root)
     assert r.returncode == 1 and 'CORE-TOUCHED' in r.stdout
+
+
+def test_preflight_scans_debt_and_docs(tmp_path):
+    make_py_project(tmp_path)
+    (tmp_path / 'app/m1.py').write_text('# TODO: handle empty input\ndef f1(): return 1\n')
+    (tmp_path / 'tests/test_core.py').write_text('import pytest\n@pytest.mark.skip\ndef test_x(): pass\n')
+    (tmp_path / 'docs').mkdir(); (tmp_path / 'docs/adr-001.md').write_text('# ADR\n')
+    out = json.loads(subprocess.run([sys.executable, S / 'preflight.py', str(tmp_path), '--json'], capture_output=True, text=True, check=True).stdout)
+    assert out['debt']['todo_count'] == 1 and out['debt']['skip_count'] == 1
+    assert out['debt']['todos'][0][0] == 'app/m1.py'
+    assert 'README.md' in out['docs'] and 'docs/adr-001.md' in out['docs']
+    draft = (tmp_path / '.hoard-pipeline/SCOPE.draft.md').read_text()
+    assert '## 0. 專案目的' in draft and '## 2b. 既有債務' in draft and 'app/m1.py:1' in draft

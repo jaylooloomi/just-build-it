@@ -42,7 +42,7 @@ echo $(( $(date +%s) + HOURS * 3600 )) > .hoard-pipeline/DEADLINE
 - DEADLINE 是 hook 判斷打包與收工的唯一依據，寫錯整晚不會停。
 - 整晚只在 `hoard/*` 分支。禁 merge / rebase / reset --hard / --force；push 只在收工時推到這條分支。
 
-### Step 1 — 執行前檢查（先類型、後耦合，都是量出來的）
+### Step 1 — 先理解專案，再執行前檢查
 
 ```bash
 python3 scripts/preflight.py "$PWD" [--scope <使用者指定的子目錄>]
@@ -50,6 +50,10 @@ cat .hoard-pipeline/SCOPE.draft.md
 ```
 
 preflight 會寫出三個檔：`preflight.json`（數字）、`FROZEN`（扇入最高的檔案 = 核心凍結清單，write-guard 會真的擋）、`SCOPE.draft.md`。
+
+**1a. 理解專案（在分類任何東西之前）**：把 SCOPE 草稿第 0 節列出的文件（README、docs、ADR、CHANGELOG）全部讀完，再看 `git log --since=30.days --oneline` 和入口檔，用一段話寫出「這個專案是給誰、解決什麼、現在做到哪」填進第 0 節。preflight 的產品型態只是關鍵字猜測，**以你讀完後的理解為準，不一致就改**（例：關鍵字猜 web，讀完發現是內部 ERP 模組 → 改成排除型態，走 plugin 模式）。這段也是 Step 3 調研「同類產品」的依據——專案目的寫錯，整晚調研的競品就錯。
+
+**1b. 看第 2b 節的既有債務**：preflight 掃出的 TODO/FIXME、被 skip 的測試。這些是開發者自己留下的「還沒做完」，優先權高於任何新功能（見 Step 2b）。
 
 然後決定測試指令並寫入 `.hoard-pipeline/TEST_CMD`（preflight 猜不到就自己找；**找不到可跑的測試 → 前幾個功能必須是「補測試」**，否則三題檢查無法執行）。跑一次完整測試寫入 `.hoard-pipeline/TESTS-START.md`（指令、通過／失敗／略過數、失敗名稱）。
 
@@ -75,13 +79,31 @@ preflight 會寫出三個檔：`preflight.json`（數字）、`FROZEN`（扇入�
 
 掛載點做完跑測試，commit：`feat(hoard): mount point + flag registry`。之後把掛載點檔案加進 FROZEN。
 
+### Step 2b — 收尾車道：先做完既有 TODO，再囤新功能
+
+囤貨前先把開發者自己留的債清掉。這條車道的規則跟功能車道不同，因為它動的是既有程式碼：
+
+| | 功能車道（Step 3–5） | 收尾車道（本步） |
+|---|---|---|
+| 來源 | 競品痛點 | SCOPE 第 2b 節：TODO/FIXME/HACK、失敗測試、skip/xfail 測試 |
+| 落點 | `features/<NN-slug>/` | 原地修 |
+| 可刪 | `rm -r` 目錄 | `git revert <commit>` 後測試仍綠 |
+| 核心 | 不碰 | **一樣不碰**：TODO 在 FROZEN 內 → 不做，列進 CATALOG「需要你決定的事」附位置 |
+
+做法：
+1. 從第 2b 節挑**具體、可驗證**的項目（「之後重構」這種模糊 TODO 不收），範圍內且不在 FROZEN 的才做；依檔案順序，最多做 10 項，超過的留給下次。
+2. 每項獨立 commit：`fix(hoard/wrap-NN): <一句話>`，commit 前跑 `core_check.sh` 與完整測試。
+3. 失敗測試／skip 測試：讓它真的通過，**不准改成更弱的斷言或加 skip**（test_audit.py 會抓）。重試 3 次仍失敗 → revert，記錄卡點。
+4. 每項完成寫進 CATALOG.md「收尾」段（跟功能卡分開）：位置、做了什麼、commit、revert 後是否全綠。
+5. 收尾清單處理完（或沒有可做的）才進 Step 3。打包階段不做收尾。
+
 ### Step 3 — 調研候選（抓痛點，不抓功能表）
 
 ```bash
 git log --since=30.days --oneline > .hoard-pipeline/recent-commits.md
 ```
 
-以 SCOPE.md 第 1 節的產品型態為線索，找 3 家最大的同類產品／開源專案。**抓它們的負評、GitHub issues、Reddit 抱怨串，不抓功能列表**。產出 8–20 個候選寫進 `.hoard-pipeline/candidates.md`，每個候選這個句型：
+以 SCOPE.md **第 0 節的專案目的**（不是第 1 節的關鍵字猜測）為線索，找 3 家最大的同類產品／開源專案。**抓它們的負評、GitHub issues、Reddit 抱怨串，不抓功能列表**。產出 8–20 個候選寫進 `.hoard-pipeline/candidates.md`，每個候選這個句型：
 
 > 同類產品的使用者抱怨 **X**（來源：連結）；在本專案可以做成一個獨立功能 **Y**，掛在 **Z** 掛載點。
 
@@ -142,6 +164,10 @@ hook 宣布收工後：
 模式：whole / module(<範圍>) / plugin ｜ 分支 hoard/<date> 基於 <BASE> ｜ 功能數 N ｜ 全部 flag 預設關閉
 怎麼試：<總開關面板的開法，一行>
 
+## 收尾（既有 TODO／失敗測試，原地修；可刪 = git revert）
+| # | 位置 | 做了什麼 | commit | revert 後全綠 |
+|---|---|---|---|---|
+
 ## 功能卡（每張可獨立開關、獨立刪除）
 | # | slug | 一句話 | 開啟 | 刪除 | 來源痛點 | 測試 | 可刪檢查 | commit |
 |---|---|---|---|---|---|---|---|---|
@@ -164,10 +190,10 @@ hook 宣布收工後：
 原樣對應 `.hoard-pipeline/blocked.log`，每行補意圖與處理。
 
 ## 需要你決定的事
-- （stash 的變更、需要新套件的候選、module 模式挑選的模組與理由）
+- （stash 的變更、需要新套件的候選、module 模式挑選的模組與理由、**落在 FROZEN 內沒做的 TODO**）
 
 ## 統計
-回合數、功能數、丟棄數、commit 數、淨增行數、結束原因（時間到／回合用完／無候選／喊停）
+回合數、收尾數、功能數、丟棄數、commit 數、淨增行數、結束原因（時間到／回合用完／無候選／喊停）
 ```
 
 CATALOG.md 從 Step 1 起就要存在並隨做隨更新——context 可能被壓縮，檔案是唯一可靠記憶。
@@ -206,4 +232,6 @@ CATALOG.md 從 Step 1 起就要存在並隨做隨更新——context 可能被�
 - 不留 `[WIP]`。囤的是完整樂高，不是零件。
 - 不為了「看起來專業」加 CI、Docker、badge。
 - 不讀前幾次的 `.hoard-pipeline/`。
+- 不在沒讀 README／docs 之前分類專案或調研競品。
+- 不跳過收尾車道直接囤。
 - 不在做完一個功能後停下——除非 hook 要你打包或收工。

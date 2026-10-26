@@ -98,6 +98,31 @@ def detect_type(root, files):
     return ptype, excluded, ext_point, scores
 
 
+TODO_RE = re.compile(r'\b(TODO|FIXME|HACK|XXX)\b')
+SKIP_RE = re.compile(r'(@pytest\.mark\.(skip|xfail)|\.skip\(|\bxit\(|\bit\.skip\(|\btest\.skip\(|\[Ignore\]|\bt\.Skip\(|#\[ignore\])')
+
+
+def scan_debt(root, src_files, test_files):
+    """Developer-left debt: TODO/FIXME lines and skipped tests, with locations. Feeds the wrap-up lane."""
+    todos, skips = [], []
+    for f in src_files + test_files:
+        txt = read_text(root, f)
+        for i, line in enumerate(txt.split('\n'), 1):
+            if TODO_RE.search(line):
+                todos.append((f, i, line.strip()[:120]))
+            if f in test_files and SKIP_RE.search(line):
+                skips.append((f, i, line.strip()[:120]))
+    per_mod = collections.Counter(module_of(f) for f, _, _ in todos)
+    return dict(todos=todos[:200], skips=skips[:100], todo_count=len(todos), skip_count=len(skips), todo_per_module=per_mod.most_common(15))
+
+
+def project_docs(root, files):
+    """Files the agent must read to understand the project before classifying anything."""
+    picks = [f for f in files if re.match(r'(README|CONTRIBUTING|ARCHITECTURE|CHANGELOG)[^/]*\.(md|rst|txt)$', f, re.I)]
+    picks += [f for f in files if re.match(r'(docs?|adr|design)/[^/]+\.md$', f, re.I)][:10]
+    return picks[:15]
+
+
 def module_of(rel):
     parts = rel.split('/')
     # first meaningful directory under a src-ish root
@@ -178,13 +203,16 @@ def main():
     src = [f for f in files if os.path.splitext(f)[1] in SRC_EXT and not TEST_HINT.search(f)]
     tests = [f for f in files if os.path.splitext(f)[1] in SRC_EXT and TEST_HINT.search(f)]
     c = coupling(root, src)
+    debt = scan_debt(root, src, tests)
+    docs = project_docs(root, all_files)
     mode, reasons = decide(stack, ptype, excluded, ext_point, bool(tests), c)
     frozen = [f for f, _ in c['top_fan_in'][:8]]
     if scope: mode = 'module'; reasons.insert(0, f'使用者指定範圍 --scope {scope}')
 
     out = dict(root=root, scope=scope, stack=stack, test_cmd=test_cmd, build_cmd=build_cmd,
                product_type=ptype, type_scores=type_scores, excluded_type=excluded, extension_point=ext_point,
-               src_files=len(src), test_files=len(tests), coupling=c, mode=mode, reasons=reasons, frozen=frozen)
+               src_files=len(src), test_files=len(tests), coupling=c, debt=debt, docs=docs,
+               mode=mode, reasons=reasons, frozen=frozen)
     pd = os.path.join(root, '.hoard-pipeline'); os.makedirs(pd, exist_ok=True)
     with open(os.path.join(pd, 'preflight.json'), 'w', encoding='utf-8') as fh:
         json.dump(out, fh, ensure_ascii=False, indent=2)
@@ -201,7 +229,11 @@ def main():
 
 def scope_md(o):
     c = o['coupling']
+    d = o['debt']
     lines = [f"# SCOPE（由 preflight.py 量出，{o['stack']} / {o['product_type']}）", '',
+             '## 0. 專案目的（agent 讀完下列文件後用一段話填寫；類型判定與調研都以此為準）',
+             '- 必讀：' + ('、'.join(f'`{x}`' for x in o['docs']) if o['docs'] else '（找不到 README／docs：改讀入口檔與最近 30 天 commit）'),
+             '- 專案目的：（待填）', '',
              '## 1. 專案類型', f"- 技術棧：{o['stack']}；測試指令：`{o['test_cmd'] or '未知，agent 必須先找出'}`；建置：`{o['build_cmd'] or '—'}`",
              f"- 產品型態：{o['product_type']}（排除型態：{'是' if o['excluded_type'] else '否'}；擴充點：{'有' if o['extension_point'] else '無'}）",
              f"- 原始碼檔數：{o['src_files']}；測試檔數：{o['test_files']}", '',
@@ -209,6 +241,11 @@ def scope_md(o):
              f"- 檔案依賴邊：{c['edges']}；平均扇出：{c['avg_fan_out']}；熱點檔（扇入≥5）：{c['hot_files']}（比例 {c['hot_ratio']}）；模組循環依賴：{c['module_cycles']}",
              '- 扇入最高的檔案（＝核心凍結候選）：']
     for f, n in c['top_fan_in'][:8]: lines.append(f'  - `{f}`（被 {n} 個檔案引用）')
+    lines += ['', f"## 2b. 既有債務（收尾車道，先做完再囤）",
+              f"- TODO/FIXME/HACK/XXX：{d['todo_count']} 處；被 skip/xfail/ignore 的測試：{d['skip_count']} 處",
+              '- TODO 最多的模組：' + ('、'.join(f'{m}（{n}）' for m, n in d['todo_per_module'][:5]) or '無')]
+    for f, i, line in d['todos'][:15]: lines.append(f'  - `{f}:{i}` {line}')
+    for f, i, line in d['skips'][:10]: lines.append(f'  - [skip] `{f}:{i}` {line}')
     lines += ['', f"## 3. 模式判定：**{o['mode']}**"]
     for r in o['reasons']: lines.append(f'- {r}')
     lines += ['', '## 4. 邊界', f"- 迭代範圍：{o['scope'] or ('整個 repo' if o['mode']=='whole' else '（module 模式：agent 在下方填入選定的模組與其對外介面）')}",

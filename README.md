@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Python-3.8%2B-3776AB" alt="Python 3.8+">
   <img src="https://img.shields.io/badge/Claude%20Code-plugin-D97757" alt="Claude Code plugin">
   <img src="https://img.shields.io/badge/Codex-plugin-black" alt="Codex plugin">
-  <a href="tests"><img src="https://img.shields.io/badge/tests-10%20passing-brightgreen" alt="tests 10 passing"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-11%20passing-brightgreen" alt="tests 11 passing"></a>
   <a href="README.zh-TW.md"><img src="https://img.shields.io/badge/lang-繁體中文-green" alt="繁體中文"></a>
 </p>
 
@@ -177,11 +177,13 @@ Versus "self-evolving" prompts: there is no direction anchor, only a **boundary 
    │
    ▼
 Step 0  record BASE; branch hoard/<date>; ACTIVE flag; DEADLINE = now + 8h
-Step 1  preflight (measured by a script, not guessed by the model)
-        preflight.py → stack / product type / test command / coupling
+Step 1  understand the project first: read README / docs / ADRs / recent commits, write a one-paragraph "purpose" into SCOPE.md
+        preflight (measured by a script, not guessed by the model)
+        preflight.py → stack / product type / test command / coupling / TODO & skipped-test list
         → mode: whole (loose, has tests) / module (tight, lock one module) / plugin (ERP, trading engine: extension points only)
         → FROZEN: highest fan-in files → write-guard actually blocks them
 Step 2  minimal mount point + features/flags.json + feature panel (the only touch of the core all night; frozen afterwards)
+Step 2b wrap-up lane: finish the TODOs / failing tests / skipped tests developers left (in scope, outside FROZEN; one commit each, git-revertable)
 Step 3  research: competitors' negative reviews and issues, not feature lists; every candidate cites a source
 Step 4  pick one: candidate-picker dedupes, caps families at 3, spreads mount points — no value score
 Step 5  build: one feature = one directory + one flag + its own tests + one card
@@ -232,11 +234,11 @@ The same plugin folder carries both the Claude Code manifest (`.claude-plugin/`)
 
 | Path | Role |
 |---|---|
-| `plugins/just-build-it/skills/feature-hoarder/SKILL.md` | The loop: measure → mount point → research → pick → build (three gates) → package → report |
+| `plugins/just-build-it/skills/feature-hoarder/SKILL.md` | The loop: understand → measure → mount point → wrap up TODOs → research → pick → build (three gates) → package → report |
 | `plugins/just-build-it/skills/go/SKILL.md` | Start — `/just-build-it:go` (Claude Code), `$go` (Codex) |
 | `plugins/just-build-it/skills/stop/SKILL.md` | Early finish — `/just-build-it:stop`, `$stop` |
 | `plugins/just-build-it/hooks/hooks.json` | Registers four hooks (3 command, 1 prompt) |
-| `plugins/just-build-it/scripts/preflight.py` | Preflight: stack, product type, test command, coupling → mode + FROZEN + SCOPE draft |
+| `plugins/just-build-it/scripts/preflight.py` | Preflight: must-read docs, stack, product type, test command, coupling, TODO/skip scan → mode + FROZEN + SCOPE draft |
 | `plugins/just-build-it/scripts/hoard-stop.sh` | Stop hook: three phases (hoard → package → finish), periodic coupling audit |
 | `plugins/just-build-it/scripts/core_check.sh` | Gate: core untouched |
 | `plugins/just-build-it/scripts/removability_check.sh` | Gate: move out, test, move back |
@@ -247,13 +249,16 @@ The same plugin folder carries both the Claude Code manifest (`.claude-plugin/`)
 | `plugins/just-build-it/agents/candidate-picker.md` | Haiku: dedupe, family cap, spread — no scoring |
 | `plugins/just-build-it/agents/catalog-reporter.md` | Haiku: writes the wrap-up message |
 | `.claude-plugin/marketplace.json` / `.agents/plugins/marketplace.json` | Claude Code / Codex marketplaces |
-| `tests/test_hoard.py` | 10 script-level tests |
+| `tests/test_hoard.py` | 11 script-level tests |
 | `docs/design.md` | Design notes: why a timed hoarder |
 
 ## FAQ
 
 **Will it turn my repo into mud?**
 That is its only enemy, so all four checks are scripts: core untouched, green with flags off, still green when moved out, no cross-feature imports. Fail → revert, never a half-built feature. The thresholds are estimates though (see Limitations).
+
+**Will it finish the TODOs I left first?**
+Yes, and before any new feature. Preflight scans TODO/FIXME lines and skipped tests; those in scope and outside FROZEN get done first, one commit each, counted only if the suite is still green after reverting that commit. TODOs inside FROZEN are not touched and are listed under "needs your decision" with their location.
 
 **How does it know which features are worth building?**
 It doesn't, and doesn't guess. It mines complaints from users of similar products as the source of candidates (the only signal in the loop the model didn't generate itself), then only dedupes and spreads. Worth is decided by you, with the delete key, the next morning.

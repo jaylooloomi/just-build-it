@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Python-3.8%2B-3776AB" alt="Python 3.8+">
   <img src="https://img.shields.io/badge/Claude%20Code-plugin-D97757" alt="Claude Code plugin">
   <img src="https://img.shields.io/badge/Codex-plugin-black" alt="Codex plugin">
-  <a href="tests"><img src="https://img.shields.io/badge/tests-10%20passing-brightgreen" alt="tests 10 passing"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-11%20passing-brightgreen" alt="tests 11 passing"></a>
   <a href="README.md"><img src="https://img.shields.io/badge/lang-English-green" alt="English"></a>
 </p>
 
@@ -177,11 +177,13 @@ claude plugin marketplace remove jaylooloomi-build
    │
    ▼
 Step 0  記錄 BASE；開 hoard/<date>；ACTIVE 旗標；DEADLINE = 現在 + 8h
-Step 1  執行前檢查（腳本量，不是模型猜）
-        preflight.py → 技術棧 / 產品型態 / 測試指令 / 耦合度
+Step 1  先理解專案：讀 README / docs / ADR / 最近 commit，寫一段「專案目的」進 SCOPE.md
+        執行前檢查（腳本量，不是模型猜）
+        preflight.py → 技術棧 / 產品型態 / 測試指令 / 耦合度 / TODO 與 skip 測試清單
         → 模式：whole（低耦合有測試）/ module（高耦合，鎖一個模組）/ plugin（ERP、交易引擎，只碰擴充點）
         → FROZEN：扇入最高的檔案 → write-guard 真的擋
 Step 2  建最小掛載點 + features/flags.json + 總開關面板（整晚唯一一次碰核心，做完也進 FROZEN）
+Step 2b 收尾車道：先把開發者留的 TODO / 失敗測試 / skip 測試做完（範圍內、FROZEN 外；一項一 commit，可 git revert）
 Step 3  調研：抓同類產品的負評和 issue，不抓功能表；每個候選要有來源
 Step 4  挑一個：candidate-picker 只去重、去同質（同家族最多 3 個）、分散掛載點——不打價值分
 Step 5  實作：一功能一目錄一 flag 一測試一卡片
@@ -232,11 +234,11 @@ Step 6  push 分支、貼「報告老闆」
 
 | 路徑 | 作用 |
 |---|---|
-| `plugins/just-build-it/skills/feature-hoarder/SKILL.md` | 流程：量 → 掛載點 → 調研 → 挑 → 實作（三題）→ 打包 → 報告 |
+| `plugins/just-build-it/skills/feature-hoarder/SKILL.md` | 流程：理解專案 → 量 → 掛載點 → 收尾 TODO → 調研 → 挑 → 實作（三題）→ 打包 → 報告 |
 | `plugins/just-build-it/skills/go/SKILL.md` | 開始 — `/just-build-it:go`（Claude Code）、`$go`（Codex） |
 | `plugins/just-build-it/skills/stop/SKILL.md` | 提前結束 — `/just-build-it:stop`、`$stop` |
 | `plugins/just-build-it/hooks/hooks.json` | 註冊四個 hook（3 個 command、1 個 prompt） |
-| `plugins/just-build-it/scripts/preflight.py` | 執行前檢查：技術棧、產品型態、測試指令、耦合度 → 模式 + FROZEN + SCOPE 草稿 |
+| `plugins/just-build-it/scripts/preflight.py` | 執行前檢查：必讀文件清單、技術棧、產品型態、測試指令、耦合度、TODO/skip 掃描 → 模式 + FROZEN + SCOPE 草稿 |
 | `plugins/just-build-it/scripts/hoard-stop.sh` | Stop hook：三階段（囤 → 打包 → 收工），週期耦合稽核 |
 | `plugins/just-build-it/scripts/core_check.sh` | 三題之一：核心未動 |
 | `plugins/just-build-it/scripts/removability_check.sh` | 三題之一：搬走跑測試再搬回 |
@@ -247,13 +249,16 @@ Step 6  push 分支、貼「報告老闆」
 | `plugins/just-build-it/agents/candidate-picker.md` | Haiku：去重、去同質、分散——不評分 |
 | `plugins/just-build-it/agents/catalog-reporter.md` | Haiku：產生「報告老闆」 |
 | `.claude-plugin/marketplace.json` / `.agents/plugins/marketplace.json` | Claude Code / Codex marketplace |
-| `tests/test_hoard.py` | 10 個腳本層測試 |
+| `tests/test_hoard.py` | 11 個腳本層測試 |
 | `docs/design.md` | 設計筆記：為什麼是定時囤貨機 |
 
 ## 常見問題
 
 **它會把我的 repo 變成一團泥嗎？**
 這是它唯一的敵人，所以四道檢查全部是腳本量的：核心沒動、flag 關掉全綠、搬走不壞、功能不互引。過不了就 revert，不會留半成品。但門檻數字是估的（見限制）。
+
+**它會先做完我留的 TODO 嗎？**
+會，而且優先於新功能。preflight 掃出 TODO/FIXME 和被 skip 的測試，範圍內且不在 FROZEN 的先做，一項一 commit，revert 後測試仍綠才算。落在 FROZEN 裡的不做，列進「需要你決定的事」附位置。
 
 **它怎麼知道什麼功能值得做？**
 不知道，也不猜。它抓同類產品的使用者抱怨當選題來源（這是迴圈裡唯一不是模型自己產生的訊號），候選只做去重和分散。值不值得是你隔天刪的時候決定。

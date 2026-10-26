@@ -69,7 +69,8 @@ fi
 echo hoarding > "$P/STATE"
 cat >&2 <<MSG
 囤貨進行中（第 $n 回合；剩餘約 ${remain_min} 分鐘，最後 $(( pack_sec / 60 )) 分鐘會強制打包）。依 just-build-it:feature-hoarder skill 繼續：
-- 從 candidates.md 取下一個候選（選擇器決定；清單用完就重新調研標竿痛點）。
+- 先確認 SCOPE.md 第 2b 節的收尾清單是否處理完（範圍內、FROZEN 外的 TODO／失敗測試）；沒有就先收尾，一項一 commit。
+- 收尾完成後，從 candidates.md 取下一個候選（選擇器決定；清單用完就重新調研標竿痛點）。
 - 一功能一目錄一 flag 一測試一卡片；commit 前跑三題檢查（core_check.sh／flag 關閉後測試全綠／removability_check.sh）。
 - 每回合至少用一個工具，印出 git status --short 與測試結果。
 - 完成即更新 CATALOG.md，然後立刻開下一個，不要停。
