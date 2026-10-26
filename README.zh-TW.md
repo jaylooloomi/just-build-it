@@ -248,7 +248,7 @@ Step 6  push 分支、貼「報告老闆」
 | 路徑 | 作用 |
 |---|---|
 | `plugins/just-build-it/skills/feature-hoarder/SKILL.md` | 流程：理解專案 → 量 → 掛載點 → 收尾 TODO → 調研 → 挑 → 實作（三題）→ 打包 → 報告 |
-| `plugins/just-build-it/skills/go/SKILL.md` | 開始 — `/just-build-it:build`（Claude Code）、`$build`（Codex） |
+| `plugins/just-build-it/skills/build/SKILL.md` | 開始 — `/just-build-it:build`（Claude Code）、`$build`（Codex） |
 | `plugins/just-build-it/skills/stop/SKILL.md` | 提前結束 — `/just-build-it:stop`、`$stop` |
 | `plugins/just-build-it/hooks/hooks.json` | 註冊四個 hook（3 個 command、1 個 prompt） |
 | `plugins/just-build-it/scripts/preflight.py` | 執行前檢查：必讀文件清單、技術棧、產品型態、測試指令、耦合度、TODO/skip 掃描 → 模式 + FROZEN + SCOPE 草稿 |

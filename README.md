@@ -248,7 +248,7 @@ The same plugin folder carries both the Claude Code manifest (`.claude-plugin/`)
 | Path | Role |
 |---|---|
 | `plugins/just-build-it/skills/feature-hoarder/SKILL.md` | The loop: understand → measure → mount point → wrap up TODOs → research → pick → build (three gates) → package → report |
-| `plugins/just-build-it/skills/go/SKILL.md` | Start — `/just-build-it:build` (Claude Code), `$build` (Codex) |
+| `plugins/just-build-it/skills/build/SKILL.md` | Start — `/just-build-it:build` (Claude Code), `$build` (Codex) |
 | `plugins/just-build-it/skills/stop/SKILL.md` | Early finish — `/just-build-it:stop`, `$stop` |
 | `plugins/just-build-it/hooks/hooks.json` | Registers four hooks (3 command, 1 prompt) |
 | `plugins/just-build-it/scripts/preflight.py` | Preflight: must-read docs, stack, product type, test command, coupling, TODO/skip scan → mode + FROZEN + SCOPE draft |
