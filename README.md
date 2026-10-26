@@ -170,6 +170,19 @@ Most people never use up their tokens. AI is good at addition (inventing and wri
 
 Versus "self-evolving" prompts: there is no direction anchor, only a **boundary anchor**. A direction anchor depends on the model's judgment and drifts; a boundary anchor (which files are off-limits) is measured and enforced by a hook.
 
+### Smarter model, better hoard — same guards
+
+The plugin keeps two things apart: **judgment** lives in the model, **discipline** lives in scripts. So every time you swap in a stronger model, the first column improves on its own:
+
+| Gets better with each model | Stays the same, by design |
+|---|---|
+| Pain points found in research are sharper, sources more reliable | The three gates (core untouched / green with flags off / still green when deleted) |
+| Mount-point design fits the stack better, Step 2 fails less | The FROZEN list and the write guard |
+| Code and test quality of every feature | Forced packaging in the last 10 % |
+| Judgment on vague TODOs and same-flavoured features | Branch isolation, protected files, no package installs |
+
+In other words: you don't wait for it to be "smart enough" before letting it loose — the guards hold today. What it produces improves with every model generation without changing a line of the plugin.
+
 ## How it works
 
 ```
