@@ -1,15 +1,14 @@
 {
   "name": "jaylooloomi-build",
-  "description": "說「我不想上班」，Claude Code 接手當定時囤貨機。",
-  "owner": { "name": "Arthur Wang" },
+  "interface": { "displayName": "jaylooloomi-build" },
   "plugins": [
     {
       "name": "just-build-it",
-      "source": "./plugins/just-build-it",
-      "description": "定時囤貨機：量耦合定範圍 → 不停長可拆卸功能 → 最後 10% 打包 CATALOG → 人用拇指做減法。",
       "version": "0.1.0",
-      "category": "productivity",
-      "keywords": ["autonomous", "hoard", "feature-flags", "evolve"]
+      "description": "做就對了. Timed feature hoarder: measure coupling, grow flag-toggleable & deletable features until time is up, leave a CATALOG to swipe through.",
+      "source": { "source": "local", "path": "./plugins/just-build-it" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
     }
   ]
 }

@@ -44,7 +44,9 @@
 
 ## 安裝
 
-**需求：** Claude Code ≥ 2.1.139 · git · bash · Python 3.8+ · macOS / Linux / WSL
+**需求：** Claude Code ≥ 2.1.139 或 Codex CLI ≥ 0.122 · git · bash · Python 3.8+ · macOS / Linux / WSL
+
+### Claude Code
 
 ```
 1. claude plugin marketplace add jaylooloomi/just-build-it
@@ -58,6 +60,18 @@
 
 想先看它會怎麼判定你的 repo：`/just-build-it:go 只量`，它跑完 preflight 寫出 SCOPE.md 就停。
 
+### OpenAI Codex
+
+```
+1. codex plugin marketplace add jaylooloomi/just-build-it
+2. codex plugin add just-build-it@jaylooloomi-build
+3. codex --yolo
+4. 進去後輸入 /hooks，信任 just-build-it 的 hook（一次就好；沒做這步什麼都不會跑）
+5. $go 8 --scope <目錄>
+```
+
+Codex 上的差異：小模型證據檢查 hook 不會跑（Codex 跳過 prompt 型 hook），所以「commit 前要有三題檢查輸出」只能靠 agent 自律；`scope-finalizer` / `candidate-picker` / `catalog-reporter` 改用 Codex 的 agent 或獨立步驟代替。Stop hook 三階段計時、核心凍結防線、耦合稽核都是 command hook，Codex 一樣會跑。**Codex 支援只照 i-want-to-sleep 的作法移植，尚未實戰驗證。**
+
 ## 參數
 
 | 參數 | 意思 |
@@ -67,6 +81,7 @@
 | `重點 X` | 只調研與 X 有關的痛點 |
 | `只量` | 只跑執行前檢查，寫 SCOPE.md 就收工 |
 | `/just-build-it:stop [立刻]` | 提前收工；`立刻` = 手上的功能直接丟掉 |
+| Codex | `$go` / `$stop`，參數相同 |
 
 ## 隔天你做什麼
 

@@ -1,10 +1,24 @@
 {
   "name": "just-build-it",
-  "displayName": "Just Build It",
   "version": "0.1.0",
-  "description": "說「我不想上班」，Claude 接手當定時囤貨機：先量專案類型與耦合度決定範圍，再在時限內不停地長「可獨立開關、可一鍵刪除、附一張卡」的功能，最後 10% 時間強制打包成 CATALOG.md。你隔天只負責滑卡片、開 toggle、按刪除。附 Stop hook 續跑、三階段計時、PreToolUse 核心凍結防線。",
-  "author": { "name": "Arthur Wang" },
+  "description": "做就對了. Measure coupling, then grow flag-toggleable, independently deletable features until time is up. Leaves a CATALOG to swipe through.",
+  "author": { "name": "Arthur Wang", "url": "https://github.com/jaylooloomi" },
+  "homepage": "https://github.com/jaylooloomi/just-build-it",
   "repository": "https://github.com/jaylooloomi/just-build-it",
   "license": "MIT",
-  "keywords": ["autonomous", "hoard", "feature-flags", "stop-hook", "evolve"]
+  "keywords": ["autonomous", "hoard", "feature-flags", "stop-hook", "evolve"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Just Build It",
+    "shortDescription": "Never idle: hoard removable features for N hours, then swipe through the catalog.",
+    "longDescription": "Preflight measures project type and coupling to pick a mode (whole repo / one module / plugin-only) and freezes the core. The agent then loops: research competitor complaints, build one feature as its own directory + feature flag + tests + catalog card, pass three mechanical gates (core untouched, flag-off green, deletable), commit, repeat. The last 10% of time is forced packaging. You delete what you don't want the next morning.",
+    "developerName": "Arthur Wang",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "defaultPrompt": [
+      "Just build it for 8 hours, scope src/reports",
+      "Just build it — measure only"
+    ]
+  }
 }
