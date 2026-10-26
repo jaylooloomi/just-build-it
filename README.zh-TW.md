@@ -2,7 +2,7 @@
 
 <p align="center">
   <b>人就是不想上班。</b><br>
-  輸入 <code>/go 8 --scope src/reports</code>，去做別的事。回來：一箱可獨立開關、可一鍵刪除的功能。滑過去，留想要的，其他刪掉。
+  輸入 <code>/build 8 --scope src/reports</code>，去做別的事。回來：一箱可獨立開關、可一鍵刪除的功能。滑過去，留想要的，其他刪掉。
 </p>
 
 <p align="center">
@@ -20,14 +20,14 @@
 
 | 情境 | 怎麼下 | 為什麼適合 |
 |---|---|---|
-| 🛋️ **週末、長假** | `/go 24 --scope src/game` | 不用交代要做什麼。它自己抓同類產品的使用者抱怨，一個一個做成可開關的功能 |
-| 💳 **訂閱額度快重置還沒用完** | `/go 3 --scope <任一模組>` | 額度歸零前把它燒成功能庫存 |
-| 🧪 **先看它會怎麼判定我的 repo** | `/go 只量` | 只跑執行前檢查，寫出 SCOPE.md 就停——看耦合度數字和它選的模式，再決定給不給它跑 |
-| 🔍 **想知道競品使用者在抱怨什麼** | `/go 2 重點 匯出與報表` | 調研步驟抓的是負評和 issue，不是功能表 |
-| 🏚️ **舊系統、高耦合、不敢動** | `/go 8`（它會自己判成 module 或 plugin 模式） | 核心凍結清單由腳本量出、hook 真的擋寫入；功能只能掛上去，不能改核心 |
+| 🛋️ **週末、長假** | `/build 24 --scope src/game` | 不用交代要做什麼。它自己抓同類產品的使用者抱怨，一個一個做成可開關的功能 |
+| 💳 **訂閱額度快重置還沒用完** | `/build 3 --scope <任一模組>` | 額度歸零前把它燒成功能庫存 |
+| 🧪 **先看它會怎麼判定我的 repo** | `/build 只量` | 只跑執行前檢查，寫出 SCOPE.md 就停——看耦合度數字和它選的模式，再決定給不給它跑 |
+| 🔍 **想知道競品使用者在抱怨什麼** | `/build 2 重點 匯出與報表` | 調研步驟抓的是負評和 issue，不是功能表 |
+| 🏚️ **舊系統、高耦合、不敢動** | `/build 8`（它會自己判成 module 或 plugin 模式） | 核心凍結清單由腳本量出、hook 真的擋寫入；功能只能掛上去，不能改核心 |
 | 🌙 **夜間交班、要把對話裡的事做完** | ❌ 用 [i-want-to-sleep](https://github.com/jaylooloomi/i-want-to-sleep) | 那是「做對一件事」；這個是「不要閒著」。兩個可以同時裝 |
 
-Codex 上改用 `$go`：`$go 3 --scope src/api`。
+Codex 上改用 `$build`：`$build 3 --scope src/api`。
 
 ## 安裝
 
@@ -52,8 +52,8 @@ claude --dangerously-skip-permissions
 
 **3. 先量，再放**
 ```
-/just-build-it:go 只量                 # 看 SCOPE.md：模式、耦合度、FROZEN 清單
-/just-build-it:go 8 --scope src/reports
+/just-build-it:build 只量                 # 看 SCOPE.md：模式、耦合度、FROZEN 清單
+/just-build-it:build 8 --scope src/reports
 ```
 
 8 小時後回來看 `CATALOG.md`。
@@ -75,7 +75,7 @@ codex --yolo
 
 **3. 輸入**
 ```
-$go 8 --scope src/reports
+$build 8 --scope src/reports
 ```
 
 <details>
@@ -141,15 +141,15 @@ claude plugin marketplace remove jaylooloomi-build
 分支是從**你當下的 HEAD** 開出去的（記在 `.hoard-pipeline/BASE`），MR 也該對它開——不是 main。
 
 ```
-/just-build-it:go                         # 8 小時（預設），範圍由它量
-/just-build-it:go 2 --scope src/reports   # 2 小時，鎖在一個目錄（建議每次都給）
-/just-build-it:go 8 重點 匯出與報表         # 只調研與 X 有關的痛點
-/just-build-it:go 只量                     # 只跑執行前檢查，寫 SCOPE.md 就停
+/just-build-it:build                         # 8 小時（預設），範圍由它量
+/just-build-it:build 2 --scope src/reports   # 2 小時，鎖在一個目錄（建議每次都給）
+/just-build-it:build 8 重點 匯出與報表         # 只調研與 X 有關的痛點
+/just-build-it:build 只量                     # 只跑執行前檢查，寫 SCOPE.md 就停
 /just-build-it:stop                       # 提前收工：手上的功能過三題就留、不過就丟
 /just-build-it:stop 立刻                   # 手上的功能直接丟，立刻打包
 ```
 
-人不在電腦前：從另一個終端機 `touch .hoard-pipeline/STOP`。Codex 用 `$go` / `$stop`。
+人不在電腦前：從另一個終端機 `touch .hoard-pipeline/STOP`。Codex 用 `$build` / `$stop`。
 
 ### 隔天
 
@@ -166,7 +166,7 @@ claude plugin marketplace remove jaylooloomi-build
 
 大部分人的 token 用不完。而 AI 擅長的是加法（想功能、寫功能），人擅長的是減法（用過之後知道不要什麼）。問題是沒有人想花時間做減法——減法也是工作。
 
-`/go` 把分工切乾淨：AI 在時限內不停地囤功能，但每一個都必須可開關、可刪除、附一張卡；人隔天只用拇指滑。**它不判斷功能好不好**——那是你用過之後才知道的事。它只保證每個功能拿出來試、丟回去的成本趨近零。
+`/build` 把分工切乾淨：AI 在時限內不停地囤功能，但每一個都必須可開關、可刪除、附一張卡；人隔天只用拇指滑。**它不判斷功能好不好**——那是你用過之後才知道的事。它只保證每個功能拿出來試、丟回去的成本趨近零。
 
 跟「自主演進」類 prompt 的差別：沒有方向錨，只有**邊界錨**。方向錨靠模型自己判斷會漂；邊界錨（哪些檔案不准碰）是量出來的，hook 真的會擋。
 
@@ -186,7 +186,7 @@ claude plugin marketplace remove jaylooloomi-build
 ## 運作方式
 
 ```
-/go 8 --scope src/reports
+/build 8 --scope src/reports
    │
    ▼
 Step 0  記錄 BASE；開 hoard/<date>；ACTIVE 旗標；DEADLINE = 現在 + 8h
@@ -228,16 +228,16 @@ Step 6  push 分支、貼「報告老闆」
 | 指令 | 怎麼搭 |
 |---|---|
 | `/i-want-to-sleep:sleep` | 「做對一件事」用 sleep；「不要閒著」用 go。兩個 plugin 狀態目錄不同（`.agent-pipeline` / `.hoard-pipeline`），可同時裝 |
-| `/go 只量` | 任何 repo 第一次都先量，看 FROZEN 清單合不合理，不合理就手動改 `.hoard-pipeline/FROZEN` 再放 |
+| `/build 只量` | 任何 repo 第一次都先量，看 FROZEN 清單合不合理，不合理就手動改 `.hoard-pipeline/FROZEN` 再放 |
 | `/cost` | 看燒了多少，對照 `CATALOG.md` 統計的功能數，算「每個可用功能的 token 成本」 |
-| `/goal` | 白天「做到某個終態」用 `/goal`；要囤用 `/go` |
+| `/goal` | 白天「做到某個終態」用 `/goal`；要囤用 `/build` |
 
 ## 相容性
 
 | 執行環境 | 狀態 |
 |---|---|
 | Claude Code（CLI、桌面版、Remote Control）≥ 2.1.139 | ✅ 支援（尚未實戰） |
-| OpenAI Codex CLI ≥ 0.122 | ✅ 支援——需在 `/hooks` 信任；無證據檢查 hook；指令 `$go` / `$stop`（尚未實戰） |
+| OpenAI Codex CLI ≥ 0.122 | ✅ 支援——需在 `/hooks` 信任；無證據檢查 hook；指令 `$build` / `$stop`（尚未實戰） |
 | claude.ai 網頁 / 手機聊天 | ❌ 無法無人看管地跑 session |
 | Cursor、Gemini CLI、Copilot CLI … | ❌ 尚未 |
 
@@ -248,7 +248,7 @@ Step 6  push 分支、貼「報告老闆」
 | 路徑 | 作用 |
 |---|---|
 | `plugins/just-build-it/skills/feature-hoarder/SKILL.md` | 流程：理解專案 → 量 → 掛載點 → 收尾 TODO → 調研 → 挑 → 實作（三題）→ 打包 → 報告 |
-| `plugins/just-build-it/skills/go/SKILL.md` | 開始 — `/just-build-it:go`（Claude Code）、`$go`（Codex） |
+| `plugins/just-build-it/skills/go/SKILL.md` | 開始 — `/just-build-it:build`（Claude Code）、`$build`（Codex） |
 | `plugins/just-build-it/skills/stop/SKILL.md` | 提前結束 — `/just-build-it:stop`、`$stop` |
 | `plugins/just-build-it/hooks/hooks.json` | 註冊四個 hook（3 個 command、1 個 prompt） |
 | `plugins/just-build-it/scripts/preflight.py` | 執行前檢查：必讀文件清單、技術棧、產品型態、測試指令、耦合度、TODO/skip 掃描 → 模式 + FROZEN + SCOPE 草稿 |

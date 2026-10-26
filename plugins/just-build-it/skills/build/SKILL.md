@@ -1,6 +1,6 @@
 ---
-name: go
-description: Start a hoarding session — the agent grows independently removable features for N hours (default 8) and leaves a CATALOG.md to swipe through. Invoke explicitly as /just-build-it:go in Claude Code or $go in Codex.
+name: build
+description: Start a hoarding session — the agent grows independently removable features for N hours (default 8) and leaves a CATALOG.md to swipe through. Invoke explicitly as /just-build-it:build in Claude Code or $build in Codex.
 argument-hint: "[hours] [--scope <dir>] [重點 X | focus on X | 只量 | measure only]"
 disable-model-invocation: true
 ---

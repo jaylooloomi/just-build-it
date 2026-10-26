@@ -8,4 +8,4 @@ claude plugin install just-build-it@jaylooloomi-build ${SCOPE:+--scope "$SCOPE"}
 claude plugin list | grep -A1 just-build-it || true
 echo
 echo "Installed. Configure once: ~/.claude/settings.json -> \"env\": { \"CLAUDE_CODE_STOP_HOOK_BLOCK_CAP\": \"0\" }"
-echo "Then: claude --dangerously-skip-permissions  and type  /just-build-it:go 8 --scope src/<module>"
+echo "Then: claude --dangerously-skip-permissions  and type  /just-build-it:build 8 --scope src/<module>"

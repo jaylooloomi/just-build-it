@@ -20,7 +20,7 @@ description: 定時囤貨機。當使用者說「我不想上班」「幫我囤�
 ## 執行環境
 
 - 子代理 `scope-finalizer`、`candidate-picker`、`catalog-reporter` 是 Claude Code 子代理；Codex 等環境改用平行 agent 功能把 `agents/*.md` 當指示交給它，沒有子代理就自己另開獨立步驟照做並在 CATALOG.md 註明。
-- 指令：Claude Code `/just-build-it:go`、`/just-build-it:stop`；Codex `$go`、`$stop`。
+- 指令：Claude Code `/just-build-it:build`、`/just-build-it:stop`；Codex `$build`、`$stop`。
 - 腳本都在 `${CLAUDE_PLUGIN_ROOT}/scripts/`，下文簡寫為 `scripts/`。
 
 ## 執行順序
@@ -34,7 +34,7 @@ git checkout -b hoard/$(date +%Y-%m-%d)
 rm -rf .hoard-pipeline && mkdir -p .hoard-pipeline
 echo "$BASE" > .hoard-pipeline/BASE
 touch .hoard-pipeline/ACTIVE
-HOURS=<來自 /go 參數，預設 8>
+HOURS=<來自 /build 參數，預設 8>
 date +%s > .hoard-pipeline/START
 echo $(( $(date +%s) + HOURS * 3600 )) > .hoard-pipeline/DEADLINE
 ```
@@ -218,7 +218,7 @@ CATALOG.md 從 Step 1 起就要存在並隨做隨更新——context 可能被�
 | 功能隔離 | features/ 之間禁互引（hook 每 5 回合稽核） |
 | 半成品 | 打包階段與收工時不得存在未過三題的功能 |
 
-## /go 參數
+## /build 參數
 
 - `<數字>`：時數，預設 8。
 - `--scope <目錄>`：強制 module 模式並指定範圍（**建議每次都給**；不給時 agent 會自己挑痛點最多的模組，但它可能挑錯）。

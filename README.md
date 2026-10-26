@@ -2,7 +2,7 @@
 
 <p align="center">
   <b>Nobody wants to work. So let the agent hoard.</b><br>
-  Type <code>/go 8 --scope src/reports</code>. Walk away. Come back to a crate of features, each one toggleable and deletable in one command. Swipe, keep what you like, delete the rest.
+  Type <code>/build 8 --scope src/reports</code>. Walk away. Come back to a crate of features, each one toggleable and deletable in one command. Swipe, keep what you like, delete the rest.
 </p>
 
 <p align="center">
@@ -20,14 +20,14 @@
 
 | Situation | Command | Why it fits |
 |---|---|---|
-| 🛋️ **Weekend, long holiday** | `/go 24 --scope src/game` | No brief needed. It mines what users of similar products complain about and turns each complaint into a toggleable feature |
-| 💳 **Subscription quota about to reset** | `/go 3 --scope <any module>` | Burn the quota into feature inventory before it vanishes |
-| 🧪 **See how it judges my repo first** | `/go measure only` | Runs preflight only, writes SCOPE.md and stops — read the coupling numbers and the mode it picked before you let it loose |
-| 🔍 **What are competitor users complaining about?** | `/go 2 focus on export and reporting` | The research step scrapes negative reviews and issues, not feature lists |
-| 🏚️ **Legacy, tightly coupled, scared to touch** | `/go 8` (it will pick module or plugin mode itself) | The frozen-core list is measured by a script and enforced by a hook; features mount onto the core, never modify it |
+| 🛋️ **Weekend, long holiday** | `/build 24 --scope src/game` | No brief needed. It mines what users of similar products complain about and turns each complaint into a toggleable feature |
+| 💳 **Subscription quota about to reset** | `/build 3 --scope <any module>` | Burn the quota into feature inventory before it vanishes |
+| 🧪 **See how it judges my repo first** | `/build measure only` | Runs preflight only, writes SCOPE.md and stops — read the coupling numbers and the mode it picked before you let it loose |
+| 🔍 **What are competitor users complaining about?** | `/build 2 focus on export and reporting` | The research step scrapes negative reviews and issues, not feature lists |
+| 🏚️ **Legacy, tightly coupled, scared to touch** | `/build 8` (it will pick module or plugin mode itself) | The frozen-core list is measured by a script and enforced by a hook; features mount onto the core, never modify it |
 | 🌙 **Overnight handover, finish what the chat started** | ❌ use [i-want-to-sleep](https://github.com/jaylooloomi/i-want-to-sleep) | That one does *the right thing*; this one *never idles*. They install side by side |
 
-On Codex use `$go` instead: `$go 3 --scope src/api`.
+On Codex use `$build` instead: `$build 3 --scope src/api`.
 
 ## Install
 
@@ -52,8 +52,8 @@ Desktop app: Settings → Claude Code → enable "Allow bypass permissions mode"
 
 **3. Measure first, then let go**
 ```
-/just-build-it:go measure only          # read SCOPE.md: mode, coupling, FROZEN list
-/just-build-it:go 8 --scope src/reports
+/just-build-it:build measure only          # read SCOPE.md: mode, coupling, FROZEN list
+/just-build-it:build 8 --scope src/reports
 ```
 
 Come back in 8 hours and open `CATALOG.md`.
@@ -75,7 +75,7 @@ Inside, type `/hooks` and trust just-build-it's hooks (once). **Nothing runs unt
 
 **3. Type**
 ```
-$go 8 --scope src/reports
+$build 8 --scope src/reports
 ```
 
 <details>
@@ -141,15 +141,15 @@ claude plugin marketplace remove jaylooloomi-build
 The branch is cut from **your current HEAD** (recorded in `.hoard-pipeline/BASE`); open the MR against it, not `main`.
 
 ```
-/just-build-it:go                              # 8 hours (default), scope measured by preflight
-/just-build-it:go 2 --scope src/reports        # 2 hours, locked to one directory (recommended every time)
-/just-build-it:go 8 focus on export            # research only pain points related to X
-/just-build-it:go measure only                 # preflight only, write SCOPE.md and stop
+/just-build-it:build                              # 8 hours (default), scope measured by preflight
+/just-build-it:build 2 --scope src/reports        # 2 hours, locked to one directory (recommended every time)
+/just-build-it:build 8 focus on export            # research only pain points related to X
+/just-build-it:build measure only                 # preflight only, write SCOPE.md and stop
 /just-build-it:stop                            # early finish: current feature kept if it passes the three gates, dropped otherwise
 /just-build-it:stop now                        # drop the current feature, package immediately
 ```
 
-Away from the keyboard: `touch .hoard-pipeline/STOP` from another terminal. On Codex use `$go` / `$stop`.
+Away from the keyboard: `touch .hoard-pipeline/STOP` from another terminal. On Codex use `$build` / `$stop`.
 
 ### The next morning
 
@@ -166,7 +166,7 @@ A human will do exactly three things: glance, try, delete. Anything more is work
 
 Most people never use up their tokens. AI is good at addition (inventing and writing features); humans are good at subtraction (knowing what they don't want once they've used it). The catch: nobody wants to spend time on subtraction either — subtraction is work.
 
-`/go` splits the job cleanly. The agent hoards features non-stop until the deadline, but every one must be toggleable, deletable, and carry a card. The human swipes with a thumb the next morning. **It does not judge whether a feature is good** — you only know that after using it. It guarantees that trying one and throwing it back costs almost nothing.
+`/build` splits the job cleanly. The agent hoards features non-stop until the deadline, but every one must be toggleable, deletable, and carry a card. The human swipes with a thumb the next morning. **It does not judge whether a feature is good** — you only know that after using it. It guarantees that trying one and throwing it back costs almost nothing.
 
 Versus "self-evolving" prompts: there is no direction anchor, only a **boundary anchor**. A direction anchor depends on the model's judgment and drifts; a boundary anchor (which files are off-limits) is measured and enforced by a hook.
 
@@ -186,7 +186,7 @@ In other words: you don't wait for it to be "smart enough" before letting it loo
 ## How it works
 
 ```
-/go 8 --scope src/reports
+/build 8 --scope src/reports
    │
    ▼
 Step 0  record BASE; branch hoard/<date>; ACTIVE flag; DEADLINE = now + 8h
@@ -228,16 +228,16 @@ Three mechanisms keep it from turning your repo into mud while unattended:
 | Command | How |
 |---|---|
 | `/i-want-to-sleep:sleep` | *Do the right thing* → sleep. *Never idle* → go. Separate state dirs (`.agent-pipeline` / `.hoard-pipeline`), install both |
-| `/go measure only` | Run once on any new repo; if the FROZEN list looks wrong, edit `.hoard-pipeline/FROZEN` by hand before letting it run |
+| `/build measure only` | Run once on any new repo; if the FROZEN list looks wrong, edit `.hoard-pipeline/FROZEN` by hand before letting it run |
 | `/cost` | Compare spend against the feature count in `CATALOG.md`: tokens per usable feature |
-| `/goal` | Daytime "reach a verifiable end state" → `/goal`; hoarding → `/go` |
+| `/goal` | Daytime "reach a verifiable end state" → `/goal`; hoarding → `/build` |
 
 ## Compatibility
 
 | Runtime | Status |
 |---|---|
 | Claude Code (CLI, desktop, Remote Control) ≥ 2.1.139 | ✅ supported (not yet field-tested) |
-| OpenAI Codex CLI ≥ 0.122 | ✅ supported — trust in `/hooks`; no evidence-check hook; commands `$go` / `$stop` (not yet field-tested) |
+| OpenAI Codex CLI ≥ 0.122 | ✅ supported — trust in `/hooks`; no evidence-check hook; commands `$build` / `$stop` (not yet field-tested) |
 | claude.ai web / mobile chat | ❌ can't run an unattended session |
 | Cursor, Gemini CLI, Copilot CLI … | ❌ not yet |
 
@@ -248,7 +248,7 @@ The same plugin folder carries both the Claude Code manifest (`.claude-plugin/`)
 | Path | Role |
 |---|---|
 | `plugins/just-build-it/skills/feature-hoarder/SKILL.md` | The loop: understand → measure → mount point → wrap up TODOs → research → pick → build (three gates) → package → report |
-| `plugins/just-build-it/skills/go/SKILL.md` | Start — `/just-build-it:go` (Claude Code), `$go` (Codex) |
+| `plugins/just-build-it/skills/go/SKILL.md` | Start — `/just-build-it:build` (Claude Code), `$build` (Codex) |
 | `plugins/just-build-it/skills/stop/SKILL.md` | Early finish — `/just-build-it:stop`, `$stop` |
 | `plugins/just-build-it/hooks/hooks.json` | Registers four hooks (3 command, 1 prompt) |
 | `plugins/just-build-it/scripts/preflight.py` | Preflight: must-read docs, stack, product type, test command, coupling, TODO/skip scan → mode + FROZEN + SCOPE draft |
