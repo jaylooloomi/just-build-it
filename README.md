@@ -183,6 +183,29 @@ The plugin keeps two things apart: **judgment** lives in the model, **discipline
 
 In other words: you don't wait for it to be "smart enough" before letting it loose — the guards hold today. What it produces improves with every model generation without changing a line of the plugin.
 
+## What it does, step by step
+
+The table below is the full sequence from `/just-build-it:build 8 --scope src/reports` to the wrap-up message. The "who" column shows whether each step is measured by a script, judged by the model, or forced by a hook — that split is the core design: **discipline in scripts, judgment in the model**.
+
+| # | Phase | What happens | Output | Who |
+|---|---|---|---|---|
+| 0 | Kick-off | Record current branch as BASE; stash uncommitted changes; branch `hoard/<date>`; write DEADLINE = now + 8h; raise the ACTIVE flag (hooks take over from here) | `.hoard-pipeline/{BASE,DEADLINE,ACTIVE}` | Model runs commands |
+| 1a | Understand | Read README, docs, ADRs, CHANGELOG, entry files, last 30 days of commits; write a one-paragraph purpose | `SCOPE.md` section 0 | Model |
+| 1b | Measure | `preflight.py`: stack, product type, test command, dependency graph, fan-in/out, cycles, TODO/skip list | `preflight.json`, `FROZEN`, `SCOPE.draft.md` | Script |
+| 1c | Pick mode | Numbers decide whole / module / plugin; in module mode pick the module with the most TODOs and add its public surface to FROZEN; find a runnable test command | `SCOPE.md`, `TEST_CMD`, `TESTS-START.md` | Script supplies numbers, model finalises |
+| 1d | Check boundary | `scope-finalizer` verifies FROZEN covers the public surface, the feature path is in scope, tests actually run | VERDICT | Small model |
+| 2 | Mount point | Flag reader, feature registration, feature panel. **The only touch of the core all night**, additive only; frozen afterwards | `features/flags.json`, mount-point commit | Model |
+| 2b | Wrap-up lane | Finish TODOs / failing tests / skipped tests in scope and outside FROZEN first; one commit each, counts only if green after revert; max 10 | CATALOG "wrap-up" section | Model, gated by `core_check.sh` + tests |
+| 3 | Research | Using the purpose, find 3 similar products; scrape their negative reviews and issues (not feature lists); every candidate cites a source | `candidates.md` (8–20) | Model |
+| 4 | Pick one | `candidate-picker` dedupes, drops anything needing new packages, caps families at 3, spreads mount points — **never judges worth** | `PICK: n` | Small model |
+| 5 | Build one | Write it in `features/<NN-slug>/`, register the flag (default false), add its own tests and a card | Feature dir + card | Model |
+| 5′ | Three gates | ① `core_check.sh` core untouched? ② full suite green with flag off? ③ `removability_check.sh` moved out, still green? Any failure → 3 retries → revert, nothing half-done | Commit or revert | Scripts |
+| ↻ | Loop | After commit, back to step 4. Whenever the model tries to stop, the Stop hook checks DEADLINE and pushes it back; every 5 turns `coupling_audit.py` checks features don't import each other | One feature per turn | Hook |
+| 6 | Package | At ≤ 10 % time left (min 15 min) the hook switches phase: no new features; drop anything that can't pass the gates within 10 min; re-run deletability on every feature; confirm flags all off and the panel works; tidy CATALOG | Final `CATALOG.md` | Hook-triggered, model executes |
+| 7 | Finish | At the deadline: full suite again, `core_check.sh`, test audit; push the branch; raise DONE; `catalog-reporter` writes the wrap-up | `TESTS-END.md`, push, report | Hook-triggered, scripts + small model |
+
+Three PreToolUse guards run throughout (they block, they don't warn): pushes only to `hoard/*`, no destructive git or package installs, no writes to FROZEN or CI / migration / config / dependency files.
+
 ## How it works
 
 ```

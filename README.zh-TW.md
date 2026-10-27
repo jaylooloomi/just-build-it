@@ -183,6 +183,29 @@ claude plugin marketplace remove jaylooloomi-build
 
 換句話說：你不用等它「夠聰明」才敢放——防線今天就擋得住；而它產出的東西會隨著每一代模型自己變好，plugin 不用改一行。
 
+## 執行時依序做什麼
+
+下表是 `/just-build-it:build 8 --scope src/reports` 從輸入到收工的完整順序。「誰」欄標出每一步是腳本量的、模型判斷的、還是 hook 強制的——這是本工具的核心設計：**紀律給腳本，判斷給模型**。
+
+| # | 階段 | 做什麼 | 產出 | 誰 |
+|---|---|---|---|---|
+| 0 | 開工 | 記錄目前分支為 BASE；stash 未提交變更；開 `hoard/<日期>` 分支；寫 DEADLINE = 現在 + 8h；立 ACTIVE 旗標（從此 hook 開始接管） | `.hoard-pipeline/{BASE,DEADLINE,ACTIVE}` | 模型執行指令 |
+| 1a | 理解專案 | 讀 README、docs、ADR、CHANGELOG、入口檔、最近 30 天 commit，寫一段「專案目的」 | `SCOPE.md` 第 0 節 | 模型 |
+| 1b | 量專案 | `preflight.py`：技術棧、產品型態、測試指令、依賴圖、扇入扇出、循環依賴、TODO/skip 清單 | `preflight.json`、`FROZEN`、`SCOPE.draft.md` | 腳本 |
+| 1c | 定模式 | 依數字決定 whole / module / plugin；module 模式挑 TODO 最多的模組並把它的對外介面加進 FROZEN；找出可跑的測試指令 | `SCOPE.md`、`TEST_CMD`、`TESTS-START.md` | 腳本給數字，模型定稿 |
+| 1d | 複核邊界 | `scope-finalizer` 檢查 FROZEN 是否涵蓋對外介面、功能落點在範圍內、測試真的能跑 | VERDICT | 小模型 |
+| 2 | 建掛載點 | flag 讀取函式、功能註冊機制、總開關面板。**整晚唯一一次碰核心**，只能加不能改；做完加進 FROZEN | `features/flags.json`、掛載點 commit | 模型 |
+| 2b | 收尾 | 範圍內、FROZEN 外的 TODO／失敗測試／skip 測試先做完，一項一 commit，revert 後測試仍綠才算；最多 10 項 | CATALOG「收尾」段 | 模型，`core_check.sh` + 測試把關 |
+| 3 | 調研 | 以「專案目的」找 3 家同類產品，抓它們的負評與 issue（不抓功能表），每個候選附來源 | `candidates.md`（8–20 個） | 模型 |
+| 4 | 挑一個 | `candidate-picker` 去重、剔除需新套件的、同家族最多 3 個、分散掛載點——**不評價好壞** | `PICK: n` | 小模型 |
+| 5 | 做一個 | 寫在 `features/<NN-slug>/`，註冊 flag 預設 false，附自己的測試和一張卡 | 功能目錄 + 卡片 | 模型 |
+| 5′ | 三題檢查 | ① `core_check.sh` 核心沒動？② 完整測試 flag 關閉全綠？③ `removability_check.sh` 搬走再跑測試仍綠？任一失敗重試 3 次，仍失敗就 revert 不留半成品 | commit 或 revert | 腳本 |
+| ↻ | 迴圈 | commit 後回到第 4 步。每次模型想停下，Stop hook 看 DEADLINE 把它推回去；每 5 回合跑 `coupling_audit.py` 查功能是否互相引用 | 一回合一個功能 | hook |
+| 6 | 打包 | 剩餘時間 ≤ 10%（至少 15 分鐘）hook 強制切換：不開新功能；手上的 10 分鐘內過不了三題就丟；對每個功能重跑可刪檢查；確認 flag 全關、面板可用；整理 CATALOG | `CATALOG.md` 定稿 | hook 觸發，模型執行 |
+| 7 | 收工 | 時間到：再跑一次完整測試、`core_check.sh`、測試稽核；push 分支；立 DONE 旗標；`catalog-reporter` 產生「報告老闆」 | `TESTS-END.md`、push、報告 | hook 觸發，腳本 + 小模型 |
+
+全程有三道 PreToolUse 防線在跑（不是提醒，是真的擋）：push 只能到 `hoard/*`、禁破壞性 git 與裝套件、禁寫 FROZEN 與 CI／migration／設定／依賴檔。
+
 ## 運作方式
 
 ```
