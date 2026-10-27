@@ -16,6 +16,17 @@
   <a href="README.zh-TW.md"><img src="https://img.shields.io/badge/lang-繁體中文-green" alt="繁體中文"></a>
 </p>
 
+## The premise
+
+**Fully automatic, no human in the loop; the human only subtracts afterwards.**
+
+| Who | Does what | When |
+|---|---|---|
+| AI | Understands the project, measures boundaries, researches, builds features one after another, self-checks, packages | Everything, unattended, until the deadline |
+| Human | Swipes the CATALOG: keep what you want, delete the rest | Afterwards, 20 minutes |
+
+The AI never decides which feature is worth having — it builds many, each deletable in one command. Judgment belongs to the person who has used them. That's why it needs no spec up front and never stops to ask you anything.
+
 ## Use cases
 
 | Situation | Command | Why it fits |
