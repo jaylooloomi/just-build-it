@@ -297,6 +297,7 @@ Step 6  push 分支、貼「報告老闆」
 | `plugins/just-build-it/agents/catalog-reporter.md` | Haiku：產生「報告老闆」 |
 | `.claude-plugin/marketplace.json` / `.agents/plugins/marketplace.json` | Claude Code / Codex marketplace |
 | `tests/test_hoard.py` | 11 個腳本層測試 |
+| `docs/SPEC.md` | 規格書：核心目標、核心功能、流程規格、驗收標準 |
 | `docs/design.md` | 設計筆記：為什麼是定時囤貨機 |
 
 ## 常見問題

@@ -297,6 +297,7 @@ The same plugin folder carries both the Claude Code manifest (`.claude-plugin/`)
 | `plugins/just-build-it/agents/catalog-reporter.md` | Haiku: writes the wrap-up message |
 | `.claude-plugin/marketplace.json` / `.agents/plugins/marketplace.json` | Claude Code / Codex marketplaces |
 | `tests/test_hoard.py` | 11 script-level tests |
+| `docs/SPEC.md` | Spec (zh-TW): goals, features, flow, acceptance criteria |
 | `docs/design.md` | Design notes: why a timed hoarder |
 
 ## FAQ
