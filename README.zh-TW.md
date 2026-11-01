@@ -1,6 +1,10 @@
 <h1 align="center">just-build-it 🔨 做就對了</h1>
 
 <p align="center">
+  <img src="docs/images/just-build-it-hero.zh-TW.png" alt="just-build-it — AI 負責打造，你決定留下。設定時限，自動開發具備核心凍結、預設關閉與可獨立刪除的功能。" width="1200">
+</p>
+
+<p align="center">
   <b>人就是不想上班。</b><br>
   輸入 <code>/build 8 --scope src/reports</code>，去做別的事。回來：一箱可獨立開關、可一鍵刪除的功能。滑過去，留想要的，其他刪掉。
 </p>

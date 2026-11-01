@@ -1,6 +1,10 @@
 <h1 align="center">just-build-it 🔨</h1>
 
 <p align="center">
+  <img src="docs/images/just-build-it-hero.en.png" alt="just-build-it — AI builds. You choose. Timed feature building with a frozen core, feature flags, and removable modules." width="1200">
+</p>
+
+<p align="center">
   <b>Nobody wants to work. So let the agent hoard.</b><br>
   Type <code>/build 8 --scope src/reports</code>. Walk away. Come back to a crate of features, each one toggleable and deletable in one command. Swipe, keep what you like, delete the rest.
 </p>
