@@ -1,0 +1,4 @@
+# Local artifacts from the script regression suite.
+__pycache__/
+.pytest_cache/
+*.py[cod]

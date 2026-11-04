@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/Python-3.8%2B-3776AB" alt="Python 3.8+">
   <img src="https://img.shields.io/badge/Claude%20Code-plugin-D97757" alt="Claude Code plugin">
   <img src="https://img.shields.io/badge/Codex-plugin-black" alt="Codex plugin">
-  <a href="tests"><img src="https://img.shields.io/badge/tests-11%20passing-brightgreen" alt="tests 11 passing"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-regression%20suite-brightgreen" alt="regression test suite"></a>
   <a href="README.zh-TW.md"><img src="https://img.shields.io/badge/lang-繁體中文-green" alt="繁體中文"></a>
 </p>
 
@@ -172,7 +172,7 @@ A human will do exactly three things: glance, try, delete. Anything more is work
 
 1. Open `CATALOG.md`. One card per feature, ≤ 3 lines: what it does, how to enable, how to delete, plus a deletability result.
 2. Want to try one: flip it to `true` in `features/flags.json`, or open the feature panel (the first line of the CATALOG says how).
-3. Don't want it: `rm -r features/NN-slug` and delete its flag line. Cards marked `REMOVABLE` were physically moved out and the test suite re-run during packaging — that's a script result, not the model's opinion.
+3. Don't want it: `rm -r features/NN-slug` and delete its flag line. Cards marked `REMOVABLE` passed the test suite with that feature and its flag removed from an isolated worktree snapshot, including uncommitted source changes. The original feature and flag are never moved or edited by the check.
 4. Read **Blocked by guards** and **Coupling audit** first: what it tried to do and got stopped, and whether features started depending on each other. These two sections decide whether you let it run again.
 5. Open an MR for the keepers (against BASE); delete `.hoard-pipeline/` after merge.
 
@@ -204,11 +204,11 @@ The table below is the full sequence from `/just-build-it:build 8 --scope src/re
 
 | # | Phase | What happens | Output | Who |
 |---|---|---|---|---|
-| 0 | Kick-off | Record current branch as BASE; stash uncommitted changes; branch `hoard/<date>`; write DEADLINE = now + 8h; raise the ACTIVE flag (hooks take over from here) | `.hoard-pipeline/{BASE,DEADLINE,ACTIVE}` | Model runs commands |
+| 0 | Kick-off | Record current branch as BASE; stash uncommitted changes; branch `hoard/<date>`; write DEADLINE = now + 8h | `.hoard-pipeline/{BASE,DEADLINE}` | Model runs commands |
 | 1a | Understand | Read README, docs, ADRs, CHANGELOG, entry files, last 30 days of commits; write a one-paragraph purpose | `SCOPE.md` section 0 | Model |
 | 1b | Measure | `preflight.py`: stack, product type, test command, dependency graph, fan-in/out, cycles, TODO/skip list | `preflight.json`, `FROZEN`, `SCOPE.draft.md` | Script |
 | 1c | Pick mode | Numbers decide whole / module / plugin; in module mode pick the module with the most TODOs and add its public surface to FROZEN; find a runnable test command | `SCOPE.md`, `TEST_CMD`, `TESTS-START.md` | Script supplies numbers, model finalises |
-| 1d | Check boundary | `scope-finalizer` verifies FROZEN covers the public surface, the feature path is in scope, tests actually run | VERDICT | Small model |
+| 1d | Check boundary | `scope-finalizer` verifies FROZEN covers the public surface, the feature path is in scope, tests actually run; then raise ACTIVE | VERDICT, `ACTIVE` | Small model + model |
 | 2 | Mount point | Flag reader, feature registration, feature panel. **The only touch of the core all night**, additive only; frozen afterwards | `features/flags.json`, mount-point commit | Model |
 | 2b | Wrap-up lane | Finish TODOs / failing tests / skipped tests in scope and outside FROZEN first; one commit each, counts only if green after revert; max 10 | CATALOG "wrap-up" section | Model, gated by `core_check.sh` + tests |
 | 3 | Research | Using the purpose, find 3 similar products; scrape their negative reviews and issues (not feature lists); every candidate cites a source | `candidates.md` (8–20) | Model |
@@ -227,12 +227,12 @@ Three PreToolUse guards run throughout (they block, they don't warn): pushes onl
 /build 8 --scope src/reports
    │
    ▼
-Step 0  record BASE; branch hoard/<date>; ACTIVE flag; DEADLINE = now + 8h
+Step 0  record BASE; branch hoard/<date>; DEADLINE = now + 8h
 Step 1  understand the project first: read README / docs / ADRs / recent commits, write a one-paragraph "purpose" into SCOPE.md
         preflight (measured by a script, not guessed by the model)
         preflight.py → stack / product type / test command / coupling / TODO & skipped-test list
         → mode: whole (loose, has tests) / module (tight, lock one module) / plugin (ERP, trading engine: extension points only)
-        → FROZEN: highest fan-in files → write-guard actually blocks them
+        → FROZEN: highest fan-in files → finalise boundary, then raise ACTIVE
 Step 2  minimal mount point + features/flags.json + feature panel (the only touch of the core all night; frozen afterwards)
 Step 2b wrap-up lane: finish the TODOs / failing tests / skipped tests developers left (in scope, outside FROZEN; one commit each, git-revertable)
 Step 3  research: competitors' negative reviews and issues, not feature lists; every candidate cites a source
@@ -254,10 +254,14 @@ Three mechanisms keep it from turning your repo into mud while unattended:
 
   | Question | Who | How it is measured |
   |---|---|---|
-  | Core untouched? | `core_check.sh` | `git diff BASE --name-only` ∩ FROZEN must be empty |
+  | Core untouched? | `core_check.sh` | compare tracked changes and new files against `CORE_BASE` (the fixed mount-point commit, or `BASE` before mounting); no FROZEN paths may change; invalid configuration or Git errors fail the gate |
   | Green with the flag off? | `TEST_CMD` | full suite (flags default to false) |
-  | Still green if deleted? | `removability_check.sh` | move the feature directory out, drop its flag, run the suite, move it back |
+  | Still green if deleted? | `removability_check.sh` | snapshot current tracked/untracked source in a disposable worktree, remove the feature and flag there, run the suite with a timeout, clean up |
   | Features depending on each other? | `coupling_audit.py` (hook, every 5 turns) | `features/<a>/` must not import `features/<b>/` |
+
+  `ACTIVE` is created after preflight has produced a valid `FROZEN` file. The write and shell guards share path normalization and frozen/protected-file rules. Missing or malformed `FROZEN` is an error while active. After the mount-point commit, record its SHA once in `.hoard-pipeline/CORE_BASE` before freezing the mount point; keep `BASE` unchanged for review/MRs.
+
+  A gate exits **0** only on success, **1** on a detected violation/test failure, and **2** when verification cannot complete (`CORE-ERROR` / `REMOVABILITY-ERROR`). `HOARD_TEST_TIMEOUT` sets the removability test timeout in seconds (default **600**). Isolation protects the original source snapshot; test commands remain trusted code, not sandboxed programs. Ignored `node_modules` / `.venv` / `venv` directories may be linked for dependencies; set `HOARD_SHARE_TEST_DEPS=0` to disable this and use a separately prepared environment. Unavailable dependency links, submodules, and external source symlinks fail verification explicitly.
 
   The small model only does two things that need no judgment: `candidate-picker` dedupes and spreads; the prompt-type Stop hook checks that the transcript actually shows the outputs above.
 
@@ -292,7 +296,7 @@ The same plugin folder carries both the Claude Code manifest (`.claude-plugin/`)
 | `plugins/just-build-it/scripts/preflight.py` | Preflight: must-read docs, stack, product type, test command, coupling, TODO/skip scan → mode + FROZEN + SCOPE draft |
 | `plugins/just-build-it/scripts/hoard-stop.sh` | Stop hook: three phases (hoard → package → finish), periodic coupling audit |
 | `plugins/just-build-it/scripts/core_check.sh` | Gate: core untouched |
-| `plugins/just-build-it/scripts/removability_check.sh` | Gate: move out, test, move back |
+| `plugins/just-build-it/scripts/removability_check.sh` | Gate: remove from an isolated current-source snapshot and test |
 | `plugins/just-build-it/scripts/coupling_audit.py` | No imports between features |
 | `plugins/just-build-it/scripts/guard-bash.sh` / `guard-write.sh` | PreToolUse guards (incl. FROZEN) |
 | `plugins/just-build-it/scripts/test_audit.py` | Flags deleted, weakened or skipped tests |
@@ -300,7 +304,7 @@ The same plugin folder carries both the Claude Code manifest (`.claude-plugin/`)
 | `plugins/just-build-it/agents/candidate-picker.md` | Haiku: dedupe, family cap, spread — no scoring |
 | `plugins/just-build-it/agents/catalog-reporter.md` | Haiku: writes the wrap-up message |
 | `.claude-plugin/marketplace.json` / `.agents/plugins/marketplace.json` | Claude Code / Codex marketplaces |
-| `tests/test_hoard.py` | 11 script-level tests |
+| `tests/` | Script regression tests, including failed verification and interrupted removal checks |
 | `docs/SPEC.md` | Spec (zh-TW): goals, features, flow, acceptance criteria |
 | `docs/design.md` | Design notes: why a timed hoarder |
 

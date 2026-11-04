@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import json, os, subprocess, sys, textwrap, time, pathlib, shutil
+import json, os, subprocess, sys, textwrap, time, pathlib, shutil, shlex
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -78,6 +78,7 @@ def test_write_guard_blocks_frozen_only_when_active(tmp_path):
 
 def test_bash_guard_branch_prefix(tmp_path):
     p = tmp_path / '.hoard-pipeline'; p.mkdir(); (p / 'ACTIVE').touch()
+    (p / 'FROZEN').write_text('')
     assert run_guard(tmp_path, {'command': 'git push -u origin hoard/2026-10-26'}, 'guard_bash.py').returncode == 0
     assert run_guard(tmp_path, {'command': 'git push -u origin night-shift/x'}, 'guard_bash.py').returncode == 2
     assert run_guard(tmp_path, {'command': 'git merge main'}, 'guard_bash.py').returncode == 2
@@ -85,7 +86,7 @@ def test_bash_guard_branch_prefix(tmp_path):
 
 def run_stop(root, env_extra=None):
     env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root), **(env_extra or {}))
-    return subprocess.run(['bash', S / 'hoard-stop.sh'], capture_output=True, text=True, env=env)
+    return subprocess.run([shutil.which('bash'), S / 'hoard-stop.sh'], capture_output=True, text=True, env=env)
 
 
 def test_stop_hook_phases(tmp_path):
@@ -134,17 +135,18 @@ def test_removability_and_core_check(tmp_path):
     subprocess.run(['git', '-C', str(root), 'commit', '-qm', 'base'], check=True)
     p = root / '.hoard-pipeline'; p.mkdir()
     (p / 'BASE').write_text('main'); (p / 'FROZEN').write_text('app/core.py\n')
-    (p / 'TEST_CMD').write_text(f'{sys.executable} -m pytest -q tests')
+    python = shlex.quote(sys.executable.replace('\\', '/'))
+    (p / 'TEST_CMD').write_text(f'{python} -m pytest -q tests')
     env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root))
-    r = subprocess.run(['bash', S / 'removability_check.sh', 'app/features/01-hello'], capture_output=True, text=True, env=env)
+    r = subprocess.run([shutil.which('bash'), S / 'removability_check.sh', 'app/features/01-hello'], capture_output=True, text=True, env=env)
     assert r.returncode == 0 and 'REMOVABLE' in r.stdout
     assert (root / 'app/features/01-hello/hello.py').exists()        # restored
     assert json.loads((root / 'app/features/flags.json').read_text()) == {'01-hello': False}  # restored
     # core untouched → clean
-    r = subprocess.run(['bash', S / 'core_check.sh'], capture_output=True, text=True, env=env, cwd=root)
+    r = subprocess.run([shutil.which('bash'), S / 'core_check.sh'], capture_output=True, text=True, env=env, cwd=root)
     assert r.returncode == 0 and 'CORE-CLEAN' in r.stdout
     (root / 'app/core.py').write_text('def run(): return 2\n')
-    r = subprocess.run(['bash', S / 'core_check.sh'], capture_output=True, text=True, env=env, cwd=root)
+    r = subprocess.run([shutil.which('bash'), S / 'core_check.sh'], capture_output=True, text=True, env=env, cwd=root)
     assert r.returncode == 1 and 'CORE-TOUCHED' in r.stdout
 
 
