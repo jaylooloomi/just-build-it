@@ -92,8 +92,8 @@
 
 **Step 0 開工**
 - 輸入：hours、scope
-- 動作：stash 未提交變更；記錄 BASE；`checkout -b hoard/<date>`；清空並建立 `.hoard-pipeline/`；寫 START、DEADLINE；touch ACTIVE
-- 輸出：`.hoard-pipeline/{BASE,START,DEADLINE,ACTIVE}`
+- 動作：stash 未提交變更；記錄 BASE；`checkout -b hoard/<date>`；清空並建立 `.hoard-pipeline/`；寫 START、DEADLINE
+- 輸出：`.hoard-pipeline/{BASE,START,DEADLINE}`（ACTIVE 在 Step 1d 完成後才建立）
 - 離開：DEADLINE 已寫（hook 依此運作）
 - 執行者：模型
 
@@ -126,13 +126,13 @@
 
 **Step 1d 邊界複核**
 - 動作：`scope-finalizer` 六項檢查（模式一致、FROZEN 涵蓋介面、落點在範圍、TEST_CMD 可跑、FROZEN 無 glob）
-- 輸出：`VERDICT: OK | ISSUES`
+- 輸出：`VERDICT: OK | ISSUES`；通過後建立 ACTIVE，缺少有效 FROZEN 時防線不放行
 - 失敗：ISSUES → 修 SCOPE/FROZEN 後重跑
 - 執行者：小模型
 
 **Step 2 掛載點**
-- 動作：`isEnabled(slug)` 讀 `features/flags.json`；掛載機制（路由/指令/事件/遊戲物件/middleware，依技術棧選一）；總開關面板；跑測試；commit；掛載點檔案加入 FROZEN
-- 約束：只新增註冊點，不改既有行為；本步是整晚唯一碰核心的一次
+- 動作：`isEnabled(slug)` 讀 `features/flags.json`；掛載機制（路由/指令/事件/遊戲物件/middleware，依技術棧選一）；總開關面板；跑測試與 core_check；commit；記錄該 commit SHA 到 CORE_BASE；掛載點檔案加入 FROZEN
+- 約束：只在既有 FROZEN 外新增註冊點，不改既有行為；CORE_BASE 只設定一次，之後不得隨功能 commit 更新
 - 輸出：`features/flags.json`（`{}`）、`CATALOG.md` 骨架、commit `feat(hoard): mount point + flag registry`
 - 執行者：模型
 
@@ -167,13 +167,14 @@
 
 | 題 | 指令 | 通過條件 |
 |---|---|---|
-| Q1 核心沒動？ | `core_check.sh` | `git diff BASE --name-only` ∩ FROZEN = ∅ |
+| Q1 核心沒動？ | `core_check.sh` | 對固定 CORE_BASE（掛載前用 BASE）檢查已追蹤變更與新檔；與 FROZEN 無交集，且所有 Git／設定檢查成功 |
 | Q2 flag 關閉全綠？ | `bash -c "$(cat TEST_CMD)"` | 完整測試 exit 0 |
 | Q2′ flag 開啟功能測試綠？ | 臨時改 true 跑功能測試後改回 | exit 0 |
-| Q3 刪掉不壞？ | `removability_check.sh <dir>` | 搬走目錄＋移除 flag → 測試 exit 0 → 搬回 |
+| Q3 刪掉不壞？ | `removability_check.sh <dir>` | 獨立 worktree 的目前原始碼快照移除目錄與 flag → 限時測試 exit 0 → 清理成功；不搬動原始功能與 flag |
 
 - 失敗：修；3 次仍失敗 → `git checkout -- . && git clean -fd <dir>`，候選標 `[DROPPED]`
 - 通過：commit `feat(hoard/NN-slug): <一句話>`；更新 CATALOG；回 Step 4
+- 檢查 exit code：0 通過、1 核心違規／測試失敗、2 設定／Git／逾時／清理等驗證錯誤。HOARD_TEST_TIMEOUT 預設 600 秒；本機依賴可能共用，測試指令不是安全沙箱內的程式。
 - 執行者：腳本
 
 **迴圈控制（Stop hook，每回合）**
@@ -202,7 +203,7 @@
 | 檔 | 寫入者 | 用途 |
 |---|---|---|
 | ACTIVE / DONE / STOP | 模型 / 模型 / 人或模型 | 狀態旗標 |
-| BASE / START / DEADLINE / STATE / turns | 模型 / hook | 計時與狀態 |
+| BASE / CORE_BASE / START / DEADLINE / STATE / turns | 模型 / hook | 審閱基準／固定掛載點 commit／計時與狀態 |
 | preflight.json / FROZEN / SCOPE.draft.md | preflight.py | 量測結果 |
 | SCOPE.md / TEST_CMD | 模型 | 定稿邊界 |
 | candidates.md / recent-commits.md | 模型 | 調研 |
@@ -218,7 +219,7 @@
 | 類別 | 規則 |
 |---|---|
 | Git | 僅 `hoard/*`；禁 merge/rebase/reset --hard/--force/切主分支；push 僅至 hoard/* |
-| 核心凍結 | FROZEN 內路徑禁寫（Step 2 例外，完成即凍結） |
+| 核心凍結 | FROZEN 內路徑禁寫；Step 2 只新增未凍結的掛載點，記錄 CORE_BASE 後也凍結 |
 | 禁改清單 | CI、migration、`appsettings*`/`*.config`/`.env*`、`*.csproj`/`package.json`/lock/`requirements*` |
 | 依賴 | 禁安裝第三方套件 |
 | 規模 | 單功能 ≤5 檔、≤300 行淨增（模型自律，picker 標 SLICE） |

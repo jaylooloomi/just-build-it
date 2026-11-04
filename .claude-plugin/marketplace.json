@@ -1,6 +1,6 @@
 {
   "name": "jaylooloomi-build",
-  "description": "說「我不想上班」，Claude Code 接手當定時囤貨機。",
+  "metadata": { "description": "說「我不想上班」，Claude Code 接手當定時囤貨機。" },
   "owner": { "name": "Arthur Wang" },
   "plugins": [
     {

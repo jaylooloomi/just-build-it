@@ -33,13 +33,12 @@ BASE=$(git branch --show-current)
 git checkout -b hoard/$(date +%Y-%m-%d)
 rm -rf .hoard-pipeline && mkdir -p .hoard-pipeline
 echo "$BASE" > .hoard-pipeline/BASE
-touch .hoard-pipeline/ACTIVE
 HOURS=<來自 /build 參數，預設 8>
 date +%s > .hoard-pipeline/START
 echo $(( $(date +%s) + HOURS * 3600 )) > .hoard-pipeline/DEADLINE
 ```
 
-- DEADLINE 是 hook 判斷打包與收工的唯一依據，寫錯整晚不會停。
+- DEADLINE 是 hook 判斷打包與收工的唯一依據，寫錯整晚不會停。先完成 Step 1 的 FROZEN 與範圍設定，再建立 ACTIVE；ACTIVE 存在卻缺少或無法讀取 FROZEN 時，寫入防線會拒絕操作。
 - 整晚只在 `hoard/*` 分支。禁 merge / rebase / reset --hard / --force；push 只在收工時推到這條分支。
 
 ### Step 1 — 先理解專案，再執行前檢查
@@ -67,7 +66,7 @@ preflight 會寫出三個檔：`preflight.json`（數字）、`FROZEN`（扇入�
 
 把定稿寫到 `.hoard-pipeline/SCOPE.md`，交給 `just-build-it:scope-finalizer` 子代理複核（它只檢查：FROZEN 是否涵蓋對外介面、功能落點是否在範圍內、TEST_CMD 是否真的能跑）。`VERDICT: ISSUES` 就照它的指出修。
 
-建立 `features/flags.json`（`{}`）和 `CATALOG.md` 骨架（格式見 Step 6）。commit：`chore(hoard): scope + preflight`。
+建立 `features/flags.json`（`{}`）和 `CATALOG.md` 骨架（格式見 Step 6）。commit：`chore(hoard): scope + preflight`。確認 FROZEN 已定稿後執行 `touch .hoard-pipeline/ACTIVE`，從此 hook 接管。
 
 ### Step 2 — 建最小可掛載點（只做一次）
 
@@ -77,7 +76,7 @@ preflight 會寫出三個檔：`preflight.json`（數字）、`FROZEN`（扇入�
 - 掛載：依型態選一個（路由表註冊 / 指令註冊 / 事件 hook / 遊戲物件註冊 / middleware 串），功能透過它進入，核心不知道功能存在。
 - 總開關面板：能顯示所有功能與開關狀態的最小介面（web 就是 `/features` 頁；CLI 就是 `--features` 列表；遊戲就是 debug menu）。這是使用者隔天「試一下」的入口。
 
-掛載點做完跑測試，commit：`feat(hoard): mount point + flag registry`。之後把掛載點檔案加進 FROZEN。
+掛載點只能加在 FROZEN 外的擴充點；若必須修改已凍結檔案，改選其他掛載方式，做不到就停止並報告。掛載點做完跑測試與 `core_check.sh`，commit：`feat(hoard): mount point + flag registry`。之後執行 `git rev-parse HEAD > .hoard-pipeline/CORE_BASE`，再把掛載點檔案加進 FROZEN。CORE_BASE 是掛載完成時的固定 commit，只在這一步設定一次；後續核心檢查對它比較，BASE 保留作為整批變更的審閱／MR 基準。
 
 ### Step 2b — 收尾車道：先做完既有 TODO，再囤新功能
 
@@ -139,6 +138,7 @@ bash scripts/removability_check.sh <範圍>/features/<NN-slug>   # Q3 刪掉會�
 ```
 
 - 三題任一失敗 → 修；重試 3 次仍失敗 → `git checkout -- . && git clean -fd <功能目錄>` revert 掉，候選標 `[DROPPED]` 寫一行原因，進下一個。**不留半成品，不做 `[WIP-FAILED]`。**
+- 核心檢查的 `CORE-ERROR`、可刪檢查的 `REMOVABILITY-ERROR` 都是未能驗證，不是通過；先修正設定或環境再重跑。`removability_check.sh` 會在獨立 worktree 對目前已追蹤與未追蹤的原始碼快照移除功能／flag 並測試，不搬動原始工作目錄；預設測試逾時 600 秒，可用 `HOARD_TEST_TIMEOUT` 調整。它不是執行任意測試程式的安全沙箱。
 - 也要跑一次 flag 開啟的測試（臨時把 flag 改 true 跑功能自己的測試，跑完改回 false）。
 - commit：`feat(hoard/NN-slug): <一句話>`。一功能一 commit，不混。
 - commit 後立刻更新 CATALOG.md，然後回 Step 4 取下一個。**不停。**

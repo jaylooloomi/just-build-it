@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/Python-3.8%2B-3776AB" alt="Python 3.8+">
   <img src="https://img.shields.io/badge/Claude%20Code-plugin-D97757" alt="Claude Code plugin">
   <img src="https://img.shields.io/badge/Codex-plugin-black" alt="Codex plugin">
-  <a href="tests"><img src="https://img.shields.io/badge/tests-11%20passing-brightgreen" alt="tests 11 passing"></a>
+  <a href="tests"><img src="https://img.shields.io/badge/tests-regression%20suite-brightgreen" alt="腳本回歸測試"></a>
   <a href="README.md"><img src="https://img.shields.io/badge/lang-English-green" alt="English"></a>
 </p>
 
@@ -172,7 +172,7 @@ claude plugin marketplace remove jaylooloomi-build
 
 1. 開 `CATALOG.md`。每個功能一張卡，≤ 3 行：一句話做什麼、怎麼開、怎麼刪，加一個「可刪檢查」結果。
 2. 想試的：`features/flags.json` 改 `true`，或開總開關面板（CATALOG 第一行寫了怎麼開）。
-3. 不要的：`rm -r features/NN-slug` ＋刪 flag 一行。標 `REMOVABLE` 的，刪了測試不會壞——這是打包階段實際搬走跑過測試的結果，不是模型說的。
+3. 不要的：`rm -r features/NN-slug` ＋刪 flag 一行。標 `REMOVABLE` 的，已在獨立 worktree 的目前原始碼快照（含尚未提交的變更）中移除功能與 flag，並跑過完整測試；檢查不會搬動或編輯原始功能與 flag。
 4. 先看**被防線擋下**和**耦合稽核**兩段：前者是它想做什麼被擋、後者是功能有沒有偷偷互相依賴。這兩段決定你要不要讓它再跑一次。
 5. 留下的開 MR（對 BASE），合併後刪 `.hoard-pipeline/`。
 
@@ -204,11 +204,11 @@ claude plugin marketplace remove jaylooloomi-build
 
 | # | 階段 | 做什麼 | 產出 | 誰 |
 |---|---|---|---|---|
-| 0 | 開工 | 記錄目前分支為 BASE；stash 未提交變更；開 `hoard/<日期>` 分支；寫 DEADLINE = 現在 + 8h；立 ACTIVE 旗標（從此 hook 開始接管） | `.hoard-pipeline/{BASE,DEADLINE,ACTIVE}` | 模型執行指令 |
+| 0 | 開工 | 記錄目前分支為 BASE；stash 未提交變更；開 `hoard/<日期>` 分支；寫 DEADLINE = 現在 + 8h | `.hoard-pipeline/{BASE,DEADLINE}` | 模型執行指令 |
 | 1a | 理解專案 | 讀 README、docs、ADR、CHANGELOG、入口檔、最近 30 天 commit，寫一段「專案目的」 | `SCOPE.md` 第 0 節 | 模型 |
 | 1b | 量專案 | `preflight.py`：技術棧、產品型態、測試指令、依賴圖、扇入扇出、循環依賴、TODO/skip 清單 | `preflight.json`、`FROZEN`、`SCOPE.draft.md` | 腳本 |
 | 1c | 定模式 | 依數字決定 whole / module / plugin；module 模式挑 TODO 最多的模組並把它的對外介面加進 FROZEN；找出可跑的測試指令 | `SCOPE.md`、`TEST_CMD`、`TESTS-START.md` | 腳本給數字，模型定稿 |
-| 1d | 複核邊界 | `scope-finalizer` 檢查 FROZEN 是否涵蓋對外介面、功能落點在範圍內、測試真的能跑 | VERDICT | 小模型 |
+| 1d | 複核邊界 | `scope-finalizer` 檢查 FROZEN 是否涵蓋對外介面、功能落點在範圍內、測試真的能跑；之後立 ACTIVE 旗標 | VERDICT、`ACTIVE` | 小模型＋模型 |
 | 2 | 建掛載點 | flag 讀取函式、功能註冊機制、總開關面板。**整晚唯一一次碰核心**，只能加不能改；做完加進 FROZEN | `features/flags.json`、掛載點 commit | 模型 |
 | 2b | 收尾 | 範圍內、FROZEN 外的 TODO／失敗測試／skip 測試先做完，一項一 commit，revert 後測試仍綠才算；最多 10 項 | CATALOG「收尾」段 | 模型，`core_check.sh` + 測試把關 |
 | 3 | 調研 | 以「專案目的」找 3 家同類產品，抓它們的負評與 issue（不抓功能表），每個候選附來源 | `candidates.md`（8–20 個） | 模型 |
@@ -227,12 +227,12 @@ claude plugin marketplace remove jaylooloomi-build
 /build 8 --scope src/reports
    │
    ▼
-Step 0  記錄 BASE；開 hoard/<date>；ACTIVE 旗標；DEADLINE = 現在 + 8h
+Step 0  記錄 BASE；開 hoard/<date>；DEADLINE = 現在 + 8h
 Step 1  先理解專案：讀 README / docs / ADR / 最近 commit，寫一段「專案目的」進 SCOPE.md
         執行前檢查（腳本量，不是模型猜）
         preflight.py → 技術棧 / 產品型態 / 測試指令 / 耦合度 / TODO 與 skip 測試清單
         → 模式：whole（低耦合有測試）/ module（高耦合，鎖一個模組）/ plugin（ERP、交易引擎，只碰擴充點）
-        → FROZEN：扇入最高的檔案 → write-guard 真的擋
+        → FROZEN：扇入最高的檔案 → 定稿邊界後立 ACTIVE 旗標
 Step 2  建最小掛載點 + features/flags.json + 總開關面板（整晚唯一一次碰核心，做完也進 FROZEN）
 Step 2b 收尾車道：先把開發者留的 TODO / 失敗測試 / skip 測試做完（範圍內、FROZEN 外；一項一 commit，可 git revert）
 Step 3  調研：抓同類產品的負評和 issue，不抓功能表；每個候選要有來源
@@ -254,10 +254,14 @@ Step 6  push 分支、貼「報告老闆」
 
   | 題目 | 誰 | 怎麼量 |
   |---|---|---|
-  | 核心有沒有被動？ | `core_check.sh` | `git diff BASE --name-only` ∩ FROZEN 必須為空 |
+  | 核心有沒有被動？ | `core_check.sh` | 對固定掛載點 commit `CORE_BASE`（掛載前用 `BASE`）檢查已追蹤變更與新檔，不得碰 FROZEN；設定或 Git 錯誤不算通過 |
   | flag 關掉全綠？ | `TEST_CMD` | 完整測試（flag 預設 false） |
-  | 刪掉會不會壞？ | `removability_check.sh` | 把功能目錄搬走、flag 拿掉、跑測試、搬回來 |
+  | 刪掉會不會壞？ | `removability_check.sh` | 在暫存 worktree 建立目前已追蹤／未追蹤原始碼快照，移除功能與 flag，限時跑測試後清理 |
   | 功能互相依賴？ | `coupling_audit.py`（hook 每 5 回合） | `features/<a>/` 不得 import `features/<b>/` |
+
+  先由 preflight 產生有效的 `FROZEN`，才建立 `ACTIVE`。寫入與 Shell 防線共用路徑正規化與凍結／禁改規則；啟用時 FROZEN 遺失或格式錯誤會拒絕操作。掛載點 commit 後，先將該 SHA 記入 `.hoard-pipeline/CORE_BASE` 再凍結掛載點；只記一次，BASE 保留作為審閱／MR 基準。
+
+  檢查只有成功才回傳 **0**；發現違規或測試失敗回傳 **1**；無法完成驗證回傳 **2**（`CORE-ERROR`／`REMOVABILITY-ERROR`）。`HOARD_TEST_TIMEOUT` 可設定可刪檢查的測試逾時秒數，預設 **600**。隔離用來保護原始碼快照，測試指令仍須可信任；它不是安全沙箱。被忽略的 `node_modules`／`.venv`／`venv` 可透過連結共用依賴；設 `HOARD_SHARE_TEST_DEPS=0` 可停用，改用另備的測試環境。依賴連結無法建立、submodule 或外部原始碼符號連結都會明確回報無法驗證。
 
   小模型只做兩件不需要判斷力的事：`candidate-picker` 去重分散、prompt 型 Stop hook 查 transcript 有沒有留下上面的輸出。
 
@@ -292,7 +296,7 @@ Step 6  push 分支、貼「報告老闆」
 | `plugins/just-build-it/scripts/preflight.py` | 執行前檢查：必讀文件清單、技術棧、產品型態、測試指令、耦合度、TODO/skip 掃描 → 模式 + FROZEN + SCOPE 草稿 |
 | `plugins/just-build-it/scripts/hoard-stop.sh` | Stop hook：三階段（囤 → 打包 → 收工），週期耦合稽核 |
 | `plugins/just-build-it/scripts/core_check.sh` | 三題之一：核心未動 |
-| `plugins/just-build-it/scripts/removability_check.sh` | 三題之一：搬走跑測試再搬回 |
+| `plugins/just-build-it/scripts/removability_check.sh` | 三題之一：在獨立的目前原始碼快照移除功能後測試 |
 | `plugins/just-build-it/scripts/coupling_audit.py` | 功能之間禁互引 |
 | `plugins/just-build-it/scripts/guard-bash.sh` / `guard-write.sh` | PreToolUse 防線（含 FROZEN 禁寫） |
 | `plugins/just-build-it/scripts/test_audit.py` | 標出被刪除、弱化或 skip 的測試 |
@@ -300,7 +304,7 @@ Step 6  push 分支、貼「報告老闆」
 | `plugins/just-build-it/agents/candidate-picker.md` | Haiku：去重、去同質、分散——不評分 |
 | `plugins/just-build-it/agents/catalog-reporter.md` | Haiku：產生「報告老闆」 |
 | `.claude-plugin/marketplace.json` / `.agents/plugins/marketplace.json` | Claude Code / Codex marketplace |
-| `tests/test_hoard.py` | 11 個腳本層測試 |
+| `tests/` | 腳本回歸測試，包含驗證失敗與刪除檢查中斷情境 |
 | `docs/SPEC.md` | 規格書：核心目標、核心功能、流程規格、驗收標準 |
 | `docs/design.md` | 設計筆記：為什麼是定時囤貨機 |
 
